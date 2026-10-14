@@ -42,7 +42,7 @@ export function PlatformLayout() {
   return (
     <div className="platform-shell dark min-h-screen bg-[#0b1220] text-slate-100">
       <header className="border-b border-white/10 bg-slate-950/95">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="grid size-10 place-items-center rounded-xl border border-sky-300/20 bg-sky-400/10 text-sky-300">
               <ShieldCheck className="size-5" />
@@ -65,7 +65,7 @@ export function PlatformLayout() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1440px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:px-8 lg:py-8">
+      <div className="mx-auto grid max-w-360 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:px-8 lg:py-8">
         <aside className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 lg:h-fit">
           <div className="px-3 pb-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</div>
           <nav className="flex gap-2 overflow-x-auto lg:flex-col">
@@ -93,18 +93,44 @@ export function PlatformReauthPage() {
   const [otp, setOtp] = React.useState("");
   const [message, setMessage] = React.useState("A fresh verification code is required to open the platform console.");
   const [error, setError] = React.useState("");
-  const [sending, setSending] = React.useState(false);
+  // A code is requested as soon as the page opens, so it starts out sending.
+  const [sending, setSending] = React.useState(true);
   const [verifying, setVerifying] = React.useState(false);
+  const [resendIn, setResendIn] = React.useState(0);
+  const requested = React.useRef(false);
+
+  const sendCode = React.useCallback(async () => {
+    try {
+      const result = await platformApi<{ resendInSeconds?: number; alreadySent?: boolean }>("/reauth/send-otp", { method: "POST" });
+      setMessage(result?.alreadySent
+        ? "A code was sent to your account phone moments ago. Use that code."
+        : "Verification code sent to your account phone.");
+      setResendIn(result?.resendInSeconds ?? 60);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not send a code.");
+    } finally {
+      setSending(false);
+    }
+  }, []);
+
+  // React's development mode runs effects twice; the ref keeps this to one request per visit.
+  React.useEffect(() => {
+    if (requested.current) return;
+    requested.current = true;
+    void sendCode();
+  }, [sendCode]);
 
   React.useEffect(() => {
-    let active = true;
+    if (resendIn <= 0) return;
+    const timer = window.setTimeout(() => setResendIn((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendIn]);
+
+  const resend = () => {
+    setError("");
     setSending(true);
-    void platformApi("/reauth/send-otp", { method: "POST" })
-      .then(() => { if (active) setMessage("Verification code sent to your account phone."); })
-      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Could not send a code."); })
-      .finally(() => { if (active) setSending(false); });
-    return () => { active = false; };
-  }, []);
+    void sendCode();
+  };
 
   const verify = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -134,6 +160,13 @@ export function PlatformReauthPage() {
           {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
           <button type="submit" disabled={verifying || otp.length !== 6} className="w-full rounded-xl bg-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50">{verifying ? "Verifying…" : "Open platform console"}</button>
         </form>
+        <div className="mt-4 text-center text-sm">
+          {resendIn > 0 ? (
+            <span className="text-slate-500">Resend code in {resendIn}s</span>
+          ) : (
+            <button type="button" onClick={resend} disabled={sending} className="font-medium text-sky-300 hover:text-sky-200 disabled:opacity-50">Resend code</button>
+          )}
+        </div>
         <p className="mt-5 text-xs leading-5 text-slate-500">The code expires after 10 minutes. Failed attempts are rate-limited.</p>
       </section>
     </div>

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUpdateOrganization } from "@/hooks/use-api";
+import OrganizationDangerZone from "@/components/organization-danger-zone";
 import { getOrganizations } from "@/lib/session";
 
 const slugify = (value: string) =>
@@ -148,6 +149,14 @@ const UpdateOrganization: React.FC = () => {
           </Button>
         </div>
       </form>
+
+      <section aria-labelledby="danger-zone-title" className="space-y-3">
+        <div>
+          <h2 id="danger-zone-title" className="text-sm font-semibold text-destructive">Danger zone</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Only you, as the owner, can see these controls.</p>
+        </div>
+        <OrganizationDangerZone organization={organization} onChanged={() => navigate("/", { replace: true })} />
+      </section>
     </div>
   );
 };

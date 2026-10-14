@@ -25,12 +25,14 @@ import {
   User,
   UserPlus,
   Wallet,
+  CreditCard,
   Clock,
   Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   canUpdateOrganization,
+  isOrganizationOwner,
   canManagePeople,
   getActiveOrganizationId,
   getViewMode,
@@ -116,6 +118,9 @@ const CommandPalette: React.FC = () => {
       ...(!isHrManagementView
         ? [
             go("loans", "Loans & advances", "/loans", HandCoins, "apply loan advance"),
+            go("expenses", "My expenses", "/expenses", HandCoins, "expense claim reimbursement receipt bill"),
+            go("tax-declaration", "My tax declaration", "/tax-declaration", HandCoins, "income tax tds 80c hra regime investment proof 12bb"),
+            go("my-schedule", "My schedule", "/my-schedule", HandCoins, "shift roster rotation swap timetable"),
             go("loan-log", "Loan log", "/history?tab=loans", History),
             go("leave", "Apply for leave", "/leave", Plane, "vacation time off balance"),
             go("leave-log", "Leave log", "/history?tab=leave", History),
@@ -141,6 +146,9 @@ const CommandPalette: React.FC = () => {
         go("installment-log", "Installment log", "/installment-log", History),
         go("kiosks", "Kiosks", "/kiosks", MonitorSmartphone, "face attendance device"),
         go("loans-all", "All loans", "/loans/all", ListChecks, "active loans noc"),
+        go("expenses-review", "Review expense claims", "/expenses/review", ListChecks, "approve reimbursement claims"),
+        go("tax-review", "Review tax declarations", "/tax-declarations/review", ListChecks, "verify tds proofs 80c investment"),
+        go("shift-roster", "Shift roster", "/shifts/roster", ListChecks, "rotation rota schedule swap night shift"),
       );
     } else if (!isHrManagementView) {
       list.push(
@@ -153,6 +161,10 @@ const CommandPalette: React.FC = () => {
         go("payroll-settings", "Payroll settings", "/payroll-settings", Settings2, "organization"),
         go("audit", "Audit log", "/audit-log", ShieldCheck, "history actions security"),
       );
+    }
+
+    if (isOrganizationOwner(orgId)) {
+      list.push(go("billing", "Billing & plan", "/billing", CreditCard, "subscription trial upgrade pricing invoice payment"));
     }
 
     if (hasPeopleManagerRole(orgId)) {

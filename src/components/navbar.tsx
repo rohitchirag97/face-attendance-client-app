@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { CreditCard, LogOut, User as UserIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +13,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import CommandPalette from "@/components/command-palette";
 import NotificationBell from "@/components/notification-bell";
+import ThemeToggle from "@/components/theme-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { displayPhone, getUser } from "@/lib/session";
+import { displayPhone, getActiveOrganizationId, getUser, isOrganizationOwner } from "@/lib/session";
 import { signOut } from "@/lib/api";
 import { useLocation } from "react-router";
 
@@ -51,6 +52,7 @@ const NavBar: React.FC = () => {
         <CommandPalette />
       </div>
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -76,6 +78,11 @@ const NavBar: React.FC = () => {
             <DropdownMenuItem onClick={() => navigate("/profile")}>
               <UserIcon /> View profile
             </DropdownMenuItem>
+            {isOrganizationOwner(getActiveOrganizationId()) && (
+              <DropdownMenuItem onClick={() => navigate("/billing")}>
+                <CreditCard /> Billing &amp; plan
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem variant="destructive" onClick={logout}>
               <LogOut /> Log out
             </DropdownMenuItem>

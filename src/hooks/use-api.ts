@@ -1,9 +1,11 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
+  getActiveOrganizationId,
   saveSession,
   setOrganizations,
   setUser,
+  setViewMode,
   type Organization,
   type User,
 } from "@/lib/session";
@@ -50,7 +52,11 @@ export const useCreateOrganization = () => {
       const orgs = await queryClient.fetchQuery({ ...organizationsQuery, staleTime: 0 });
       return { orgs, created: orgs.find((o) => o.slug === vars.slug) ?? orgs[0] };
     },
-    onSuccess: ({ orgs, created }) => setOrganizations(orgs, created?.id),
+    onSuccess: ({ orgs, created }) => {
+      setOrganizations(orgs, created?.id);
+      // The creator owns it and is about to set it up, so start in Manage view.
+      setViewMode("admin");
+    },
   });
 };
 
@@ -242,3 +248,29 @@ export const useUpdateProfile = () =>
       setUser({ ...current, ...(res.user ?? vars) });
     },
   });
+
+export type OrganizationLifecycleAction = "deactivate" | "reactivate" | "schedule-deletion" | "cancel-deletion";
+
+/** The owner's pause and delete controls; the organization list is refreshed afterwards. */
+export const useOrganizationLifecycle = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ organizationId, action, confirmName }: {
+      organizationId: string;
+      action: OrganizationLifecycleAction;
+      confirmName?: string;
+    }) => {
+      const base = `/organization/${encodeURIComponent(organizationId)}`;
+      if (action === "deactivate") return api(`${base}/deactivate`, { method: "POST", auth: true });
+      if (action === "reactivate") return api(`${base}/reactivate`, { method: "POST", auth: true });
+      if (action === "schedule-deletion") {
+        return api(`${base}/deletion`, { method: "POST", body: { confirmName }, auth: true });
+      }
+      return api(`${base}/deletion`, { method: "DELETE", auth: true });
+    },
+    onSuccess: async () => {
+      const orgs = await queryClient.fetchQuery({ ...organizationsQuery, staleTime: 0 });
+      setOrganizations(orgs, getActiveOrganizationId() ?? undefined);
+    },
+  });
+};

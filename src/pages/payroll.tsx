@@ -55,7 +55,7 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
   const currency = items[0]?.currencyCode ?? "INR";
 
   const handleFinalize = () => {
-    if (!window.confirm("Finalize this payroll? Loan installments will be recorded and the run can no longer be changed.")) return;
+    if (!window.confirm("Finalize this payroll? Loan installments will be recorded, expense claims in it will be marked paid, and the run can no longer be changed.")) return;
     setActionError(null);
     finalize.mutate(runId, { onError: (e) => setActionError(e.message) });
   };
@@ -114,6 +114,7 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
               <th className="px-3 text-right font-medium">Gross</th>
               <th className="px-3 text-right font-medium">Fine</th>
               <th className="px-3 text-right font-medium">Loan</th>
+              <th className="px-3 text-right font-medium">Reimbursed</th>
               <th className="px-3 text-right font-medium">Net pay</th>
               <th className="pl-3" />
             </tr>
@@ -132,6 +133,7 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
                 <td className="px-3 text-right">{formatMoney(i.grossPay, i.currencyCode)}</td>
                 <td className="px-3 text-right">{formatMoney(i.lateFine, i.currencyCode)}</td>
                 <td className="px-3 text-right">{formatMoney(i.loanDeduction, i.currencyCode)}</td>
+                <td className="px-3 text-right">{Number(i.reimbursements) > 0 ? formatMoney(i.reimbursements, i.currencyCode) : "—"}</td>
                 <td className="px-3 text-right font-semibold">{formatMoney(i.netPay, i.currencyCode)}</td>
                 <td className="pl-3 text-right">
                   <Button variant="ghost" size="sm" onClick={() => navigate(`/salary-slip/${i.id}`)}>

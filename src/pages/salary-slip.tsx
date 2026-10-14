@@ -134,6 +134,17 @@ const SalarySlip: React.FC = () => {
           </section>
         </div>
 
+        {Number(i.reimbursements) > 0 && (
+          <section className="border-t pt-4">
+            <h2 className="mb-1 text-sm font-semibold uppercase text-gray-500">Reimbursements</h2>
+            {i.reimbursementLines.map((l) => (
+              <Row key={l.claimId} label={l.label} value={m(l.amount)} />
+            ))}
+            <div className="border-t"><Row label="Total reimbursements" value={m(i.reimbursements)} strong /></div>
+            <p className="mt-1 text-xs text-gray-500">Approved expense claims, paid with this salary. Not part of gross pay.</p>
+          </section>
+        )}
+
         <div className="flex justify-between rounded-md bg-gray-100 px-4 py-3 text-lg font-bold">
           <span>Net pay</span>
           <span>{m(i.netPay)}</span>

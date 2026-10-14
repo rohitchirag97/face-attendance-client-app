@@ -6,7 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { StatusBadge } from "@/components/platform/status-badge";
 import { Button } from "@/components/ui/button";
 import { usePlatformOverview } from "@/hooks/use-platform";
-import { formatPlatformDate } from "@/lib/platform";
+import { describeAccess, formatPlatformDate } from "@/lib/platform";
 
 const card = "rounded-2xl border border-white/10 bg-slate-900/75 p-5 shadow-[0_18px_45px_-28px_rgba(0,0,0,.65)]";
 
@@ -51,7 +51,7 @@ export default function PlatformOverviewPage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.85fr)]">
         <section className={card}>
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-semibold text-white">Organization signups</h2><p className="mt-1 text-xs text-slate-500">Monthly customer onboarding</p></div><span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">Last 6 months</span></div>
-          <div className="mt-5 h-[270px] w-full">
+          <div className="mt-5 h-67.5 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.signupsByMonth} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid stroke="rgba(148,163,184,.12)" vertical={false} />
@@ -74,13 +74,27 @@ export default function PlatformOverviewPage() {
       </div>
 
       <section className={`${card} overflow-hidden p-0`}>
+        <div className="px-5 py-4"><h2 className="font-semibold text-white">Billing needs attention</h2><p className="mt-1 text-xs text-slate-500">Upgrade requests first, then trials and paid periods ending within 7 days, grace periods and read-only workspaces</p></div>
+        {data.billing.attention.length === 0 ? <p className="border-t border-white/5 px-5 py-8 text-center text-sm text-slate-500">Nothing needs attention right now.</p> : (
+          <ul className="divide-y divide-white/5 border-t border-white/5">
+            {data.billing.attention.map((item) => (
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <Link to={`/platform/organizations/${item.id}`} className="font-medium text-white hover:text-sky-200">{item.name}</Link>
+                <span className={`rounded-full px-2.5 py-1 text-xs ${item.upgradeRequestedAt ? "bg-amber-400/10 text-amber-200" : item.access.state === "read_only" || item.access.state === "grace" ? "bg-rose-400/10 text-rose-200" : "bg-white/5 text-slate-300"}`}>{describeAccess(item.access, item.upgradeRequestedAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className={`${card} overflow-hidden p-0`}>
         <div className="flex items-center justify-between gap-3 px-5 py-4"><div><h2 className="font-semibold text-white">Recently added organizations</h2><p className="mt-1 text-xs text-slate-500">Account metadata and roll-up usage</p></div><Link to="/platform/organizations" className="text-sm font-medium text-sky-300 hover:text-sky-200">View all →</Link></div>
         {data.recentOrganizations.length === 0 ? <p className="border-t border-white/5 px-5 py-12 text-center text-sm text-slate-500">No organizations have been onboarded yet.</p> : (
           <div className="overflow-x-auto border-t border-white/5">
-            <table className="w-full min-w-[700px] text-left text-sm">
+            <table className="w-full min-w-175 text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3 font-medium">Organization</th><th className="px-5 py-3 font-medium">Owner</th><th className="px-5 py-3 font-medium">Employees</th><th className="px-5 py-3 font-medium">Last sign-in</th><th className="px-5 py-3 font-medium">Status</th></tr></thead>
               <tbody className="divide-y divide-white/5">
-                {data.recentOrganizations.map((organization) => <tr key={organization.id} className="transition hover:bg-white/[0.025]"><td className="px-5 py-3.5"><Link to={`/platform/organizations/${organization.id}`} className="font-medium text-white hover:text-sky-200">{organization.name}</Link><span className="mt-1 block text-xs text-slate-500">{organization.slug}</span></td><td className="px-5 py-3.5"><span className="text-slate-200">{organization.owner?.name ?? "No owner assigned"}</span><span className="mt-1 block text-xs text-slate-500">{organization.owner?.phone ?? "—"}</span></td><td className="px-5 py-3.5 text-slate-300">{organization.usage.activeEmployees.toLocaleString()}</td><td className="px-5 py-3.5 text-slate-400">{formatPlatformDate(organization.usage.lastSignInAt)}</td><td className="px-5 py-3.5"><StatusBadge status={organization.status} /></td></tr>)}
+                {data.recentOrganizations.map((organization) => <tr key={organization.id} className="transition hover:bg-white/2.5"><td className="px-5 py-3.5"><Link to={`/platform/organizations/${organization.id}`} className="font-medium text-white hover:text-sky-200">{organization.name}</Link><span className="mt-1 block text-xs text-slate-500">{organization.slug}</span></td><td className="px-5 py-3.5"><span className="text-slate-200">{organization.owner?.name ?? "No owner assigned"}</span><span className="mt-1 block text-xs text-slate-500">{organization.owner?.phone ?? "—"}</span></td><td className="px-5 py-3.5 text-slate-300">{organization.usage.activeEmployees.toLocaleString()}</td><td className="px-5 py-3.5 text-slate-400">{formatPlatformDate(organization.usage.lastSignInAt)}</td><td className="px-5 py-3.5"><StatusBadge status={organization.status} /></td></tr>)}
               </tbody>
             </table>
           </div>

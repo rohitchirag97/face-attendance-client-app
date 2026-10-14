@@ -93,7 +93,8 @@ const ChartCard: React.FC<{ title: string; subtitle?: string; children: React.Re
 const tooltipStyle = {
   borderRadius: 8,
   border: "1px solid var(--border)",
-  background: "var(--background)",
+  background: "var(--popover)",
+  color: "var(--popover-foreground)",
   fontSize: 12,
 };
 
@@ -248,9 +249,9 @@ export const EmployeeCharts: React.FC<{ organizationId: string; userId: string }
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={slipData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" tickLine={false} fontSize={12} />
-              <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="label" tickLine={false} fontSize={12} stroke="var(--muted-foreground)" />
+              <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} stroke="var(--muted-foreground)" />
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(148,163,184,0.15)" }} />
               <Bar dataKey="Net" fill={COLORS.net} radius={[4, 4, 0, 0]} />
             </BarChart>

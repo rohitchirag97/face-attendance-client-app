@@ -4,7 +4,11 @@ export type Organization = {
   slug: string;
   isActive: boolean;
   membershipActive: boolean;
-  status?: "active" | "suspended" | "pending_deletion";
+  status?: "active" | "suspended" | "pending_deletion" | "deleted";
+  /** Set while the owner has paused the organization. */
+  deactivatedAt?: string | null;
+  /** With status pending_deletion: when it will be permanently erased. */
+  deletionScheduledAt?: string | null;
   role?: "super_admin" | "admin" | "hr" | "employee";
 };
 
@@ -101,6 +105,8 @@ export const canManageEmployees = (organizationId?: string | null) =>
   getViewMode() === "admin" && hasManagerRole(organizationId);
 export const canManagePeople = (organizationId?: string | null) =>
   getViewMode() === "admin" && hasPeopleManagerRole(organizationId);
+/** The super admin, whatever view they are in. Billing belongs to them alone. */
+export const isOrganizationOwner = (organizationId?: string | null) => hasRole(organizationId, ["super_admin"]);
 export const canUpdateOrganization = (organizationId?: string | null) =>
   getViewMode() === "admin" && hasRole(organizationId, ["super_admin"]);
 export const setActiveOrganizationId = (id: string) => {

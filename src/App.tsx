@@ -4,6 +4,13 @@ import Layout from "./pages/layout";
 import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import Reports from "./pages/reports";
+import BillingPage from "./pages/billing";
+import ExpensesPage from "./pages/expenses";
+import ExpenseReviewPage from "./pages/expense-review";
+import TaxDeclarationPage from "./pages/tax-declaration";
+import TaxDeclarationReviewPage from "./pages/tax-declaration-review";
+import ShiftRosterPage from "./pages/shift-roster";
+import MySchedulePage from "./pages/my-schedule";
 import Profile from "./pages/profile";
 import VerifyOTP from "./pages/verify-otp";
 import CreateOrganization from "./pages/create-organization";
@@ -50,6 +57,7 @@ import {
   canManageEmployees,
   canManagePeople,
   canUpdateOrganization,
+  isOrganizationOwner,
   getActiveOrganizationId,
   hasSelectableOrganization,
   setOrganizations,
@@ -104,10 +112,12 @@ const router = createBrowserRouter([
     loader: async () => {
       if (!isLoggedIn()) return redirect("/login");
       const organizations = await refreshOrganizations();
-      const hasSuspended = organizations.some((organization) =>
-        organization.membershipActive && organization.status !== "active",
+      // Open whenever one of the user's organizations is paused, suspended or being deleted, even if
+      // another one works: owners reach the reactivate and cancel-deletion controls from here.
+      const hasUnavailable = organizations.some((organization) =>
+        organization.membershipActive && (!organization.isActive || organization.status !== "active"),
       );
-      return hasSuspended && !hasSelectableOrganization(organizations) ? null : redirect("/");
+      return hasUnavailable ? null : redirect("/");
     },
   },
   {
@@ -142,7 +152,7 @@ const router = createBrowserRouter([
         }
       }
       if (!hasSelectableOrganization(organizations)) {
-        return organizations.some((organization) => organization.membershipActive && organization.status !== "active")
+        return organizations.some((organization) => organization.membershipActive && (!organization.isActive || organization.status !== "active"))
           ? redirect("/organization-suspended")
           : redirect("/create-organization");
       }
@@ -151,6 +161,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, Component: Dashboard },
       { path: "reports", Component: Reports },
+      { path: "billing", Component: BillingPage, loader: guardedLoader(isOrganizationOwner) },
       { path: "profile", Component: Profile },
       {
         path: "employees/bulk",
@@ -220,6 +231,12 @@ const router = createBrowserRouter([
       { path: "attendance/regularization", loader: () => redirect("/attendance/corrections") },
       { path: "attendance/overtime", Component: OvertimePage, loader: guardedLoader(canManagePeople) },
       { path: "loans", Component: Loans },
+      { path: "expenses", Component: ExpensesPage },
+      { path: "expenses/review", Component: ExpenseReviewPage, loader: guardedLoader(canManagePeople) },
+      { path: "tax-declaration", Component: TaxDeclarationPage },
+      { path: "my-schedule", Component: MySchedulePage },
+      { path: "shifts/roster", Component: ShiftRosterPage, loader: guardedLoader(canManagePeople) },
+      { path: "tax-declarations/review", Component: TaxDeclarationReviewPage, loader: guardedLoader(canManagePeople) },
       { path: "loans/all", Component: LoanListPage, loader: guardedLoader(canManageEmployees) },
       { path: "leave", Component: Leave },
       { path: "leave/applications", Component: LeaveApplicationsPage },

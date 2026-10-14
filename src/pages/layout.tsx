@@ -1,4 +1,6 @@
 import NavBar from "@/components/navbar";
+import BillingBanner from "@/components/billing-banner";
+import TrialGate from "@/components/trial-gate";
 import AppSidebar from "@/components/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import React, { useEffect, useState } from "react";
@@ -69,9 +71,12 @@ const Layout: React.FC = () => {
       <AppSidebar />
       <SidebarInset>
         <NavBar />
+        <BillingBanner key={organizationId ?? "none"} organizationId={organizationId} />
         <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 bg-background p-4 outline-none md:p-6">
           <div key={`${organizationId ?? "none"}:${viewMode}`} className="mx-auto w-full max-w-[1600px]">
-            {navigation.state === "loading" ? <PageSkeleton /> : <Outlet />}
+            <TrialGate organizationId={organizationId}>
+              {navigation.state === "loading" ? <PageSkeleton /> : <Outlet />}
+            </TrialGate>
           </div>
         </main>
       </SidebarInset>

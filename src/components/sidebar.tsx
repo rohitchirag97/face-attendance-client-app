@@ -8,6 +8,7 @@ import {
   canManagePeople,
   hasManagerRole,
   hasPeopleManagerRole,
+  isOrganizationOwner,
   setViewMode,
 } from "@/lib/session";
 import { signOut } from "@/lib/api";
@@ -17,6 +18,7 @@ import {
   Building2,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   ChevronDown,
   Clock,
   ContactRound,
@@ -32,10 +34,12 @@ import {
   MonitorSmartphone,
   Plane,
   Receipt,
+  ReceiptText,
   Settings2,
   UserPlus,
   Users,
   Wallet,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -128,6 +132,8 @@ const AppSidebar: React.FC = () => {
           ? [{ label: "My attendance", icon: CalendarDays, to: "/attendance/my" }]
           : []),
         { label: "Corrections", icon: ListChecks, to: "/attendance/corrections" },
+        ...(!isHrManagementView ? [{ label: "My schedule", icon: CalendarDays, to: "/my-schedule" }] : []),
+        ...(canManagePeopleView ? [{ label: "Shift roster", icon: CalendarRange, to: "/shifts/roster" }] : []),
         ...(canManagePeopleView ? [{ label: "Overtime", icon: Timer, to: "/attendance/overtime" }] : []),
       ],
     },
@@ -164,7 +170,26 @@ const AppSidebar: React.FC = () => {
           ],
         }]
       : []),
-  ];
+    {
+      key: "expenses",
+      label: "Expenses",
+      icon: ReceiptText,
+      items: [
+        // HR's management view is for reviewing; their own claims live in My view.
+        ...(!isHrManagementView ? [{ label: "My expenses", icon: ReceiptText, to: "/expenses" }] : []),
+        ...(canManagePeopleView ? [{ label: "Review claims", icon: ListChecks, to: "/expenses/review" }] : []),
+      ],
+    },
+    {
+      key: "tax",
+      label: "Income tax",
+      icon: Landmark,
+      items: [
+        ...(!isHrManagementView ? [{ label: "My tax declaration", icon: Landmark, to: "/tax-declaration" }] : []),
+        ...(canManagePeopleView ? [{ label: "Tax declarations", icon: ListChecks, to: "/tax-declarations/review" }] : []),
+      ],
+    },
+  ].filter((group) => group.items.length > 0);
   const links = [
     ...(getUser()?.isPlatformAdmin
       ? [{ label: "Platform console", icon: ShieldCheck, to: "/platform" }]
@@ -182,6 +207,11 @@ const AppSidebar: React.FC = () => {
       ? [
           { label: "Payroll settings", icon: Settings2, to: "/payroll-settings" },
           { label: "Audit log", icon: ShieldCheck, to: "/audit-log" },
+        ]
+      : []),
+    ...(isOrganizationOwner(activeOrganizationId)
+      ? [
+          { label: "Billing", icon: CreditCard, to: "/billing" },
         ]
       : []),
   ];
@@ -241,7 +271,7 @@ const AppSidebar: React.FC = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {groups.filter(({ key }) => key !== "loans").map(({ key, label, icon: GroupIcon, items }) => {
+              {groups.filter(({ key }) => !["loans", "expenses", "tax"].includes(key)).map(({ key, label, icon: GroupIcon, items }) => {
                 const hasActive = items.some((item) => isItemActive(item.to, pathname, search));
                 const open = openKey === key;
                 return (
@@ -315,7 +345,8 @@ const AppSidebar: React.FC = () => {
                 <SidebarMenuItem key={to}>
                   <SidebarMenuButton
                     tooltip={label}
-                    isActive={pathname === to || pathname.startsWith(`${to}/`)}
+                    // A sub-page that belongs to a menu group (like /shifts/roster) highlights only that group item.
+                    isActive={pathname === to || (pathname.startsWith(`${to}/`) && !currentGroupKey)}
                     render={<NavLink to={to} />}
                   >
                     <Icon />
@@ -324,7 +355,7 @@ const AppSidebar: React.FC = () => {
                 </SidebarMenuItem>
               ))}
 
-              {groups.filter(({ key }) => key === "loans").map(({ key, label, icon: GroupIcon, items }) => {
+              {groups.filter(({ key }) => ["loans", "expenses", "tax"].includes(key)).map(({ key, label, icon: GroupIcon, items }) => {
                 const hasActive = items.some((item) => isItemActive(item.to, pathname, search));
                 const open = openKey === key;
                 return (

@@ -55,6 +55,21 @@ const OrganizationSwitcher: React.FC = () => {
     organization.membershipActive &&
     (organization.status ?? "active") === "active";
 
+  // The owner can bring back an organization they paused or scheduled for deletion.
+  const ownerCanRestore = (organization: (typeof organizations)[number]) =>
+    organization.membershipActive &&
+    organization.role === "super_admin" &&
+    (organization.status === "pending_deletion" || (organization.status === "active" && !organization.isActive));
+
+  const unavailableReason = (organization: (typeof organizations)[number]) => {
+    if (!organization.membershipActive) return "Contact Admin to reactivate the account";
+    if (organization.status === "suspended") return "Suspended · contact support";
+    if (organization.status === "pending_deletion") {
+      return ownerCanRestore(organization) ? "Scheduled for deletion · manage" : "Scheduled for deletion";
+    }
+    return ownerCanRestore(organization) ? "Paused · reactivate" : "Paused by the owner";
+  };
+
   const active =
     organizations.find((o) => o.id === activeId && isSelectable(o)) ??
     organizations.find(isSelectable) ??
@@ -131,8 +146,8 @@ const OrganizationSwitcher: React.FC = () => {
               {organizations.map((org) => (
                 <DropdownMenuItem
                   key={org.id}
-                  disabled={!isSelectable(org)}
-                  onClick={() => select(org.id)}
+                  disabled={!isSelectable(org) && !ownerCanRestore(org)}
+                  onClick={() => (isSelectable(org) ? select(org.id) : navigate("/organization-suspended"))}
                   className={`gap-2 ${
                     !isSelectable(org)
                       ? "text-muted-foreground opacity-60"
@@ -146,7 +161,7 @@ const OrganizationSwitcher: React.FC = () => {
                     <span className="block">{org.name}</span>
                     {!isSelectable(org) && (
                       <span className="block text-[0.65rem]">
-                        {org.status === "suspended" ? "Suspended · contact support" : "Contact Admin to reactivate the account"}
+                        {unavailableReason(org)}
                       </span>
                     )}
                   </span>

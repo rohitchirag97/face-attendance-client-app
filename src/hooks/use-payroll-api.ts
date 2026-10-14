@@ -124,6 +124,9 @@ export type PayrollItem = {
   totalDeductions: string;
   netPay: string;
   loanLines: { recoverableId: string; label: string; amount: string }[];
+  /** Approved expense claims paid with this salary, outside gross pay. */
+  reimbursements: string;
+  reimbursementLines: { claimId: string; label: string; amount: string }[];
   allowancesPay: string;
   componentDeductions: string;
   componentLines: PayrollComponentLine[];

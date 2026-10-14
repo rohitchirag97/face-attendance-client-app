@@ -44,7 +44,13 @@ export type PlatformOverview = {
   signupsByMonth: Array<{ month: string; label: string; organizations: number }>;
   recentOrganizations: PlatformOrganization[];
   reportingStartedAt: string;
-  billing: { activeSubscriptions: number; openInvoices: number; outstandingAmount: string };
+  billing: {
+    activeSubscriptions: number;
+    openInvoices: number;
+    outstandingAmount: string;
+    /** Upgrade requests first, then trials or paid periods ending soon, grace and read-only. */
+    attention: Array<{ id: string; name: string; upgradeRequestedAt: string | null; access: PlatformAccess }>;
+  };
 };
 
 export type PlatformPlan = {
@@ -57,6 +63,7 @@ export type PlatformPlan = {
   includedEmployees: number;
   overagePrice: string;
   features: string[];
+  visibility: "public" | "custom";
   isActive: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -77,6 +84,16 @@ export type PlatformBillingProfile = {
   updatedAt: string | Date;
 };
 
+/** Mirrors OrganizationAccess in server/src/services/billing-access.services.ts. */
+export type PlatformAccess = {
+  state: "inactive" | "trial" | "paid" | "grace" | "read_only";
+  trialEndsAt: string | null;
+  paidUntil: string | null;
+  accessEndsAt: string | null;
+  graceEndsAt: string | null;
+  daysLeft: number;
+};
+
 export type PlatformOrganizationBilling = {
   profile: PlatformBillingProfile | null;
   subscription: null | {
@@ -84,12 +101,34 @@ export type PlatformOrganizationBilling = {
     status: "active" | "trial" | "past_due" | "cancelled";
     startsAt: string;
     nextBillingAt: string | null;
+    paidUntil: string | null;
     planId: string;
     planName: string;
     priceAmount: string;
     currencyCode: string;
     billingPeriod: "monthly" | "annual";
   };
+  access: PlatformAccess | null;
+  billableEmployees: number;
+  upgradeRequestedAt: string | null;
+  /** Custom plans this organization's owner can see. */
+  offeredPlanIds: string[];
+};
+
+/** One line describing where an organization stands, for the platform console. */
+export const describeAccess = (access: PlatformAccess, upgradeRequestedAt?: string | null) => {
+  const days = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
+  const state =
+    access.state === "inactive"
+      ? "Trial not started"
+      : access.state === "trial"
+      ? `Trial · ${days(access.daysLeft)} left`
+      : access.state === "paid"
+        ? `Paid until ${formatPlatformDate(access.accessEndsAt)}`
+        : access.state === "grace"
+          ? `Grace · read-only in ${days(access.daysLeft)}`
+          : "Read-only";
+  return upgradeRequestedAt ? `Upgrade requested ${formatPlatformDate(upgradeRequestedAt)} · ${state}` : state;
 };
 
 export type PlatformInvoice = {

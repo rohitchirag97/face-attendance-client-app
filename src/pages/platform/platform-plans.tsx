@@ -15,9 +15,10 @@ type PlanDraft = {
   includedEmployees: string;
   overagePrice: string;
   features: string[];
+  visibility: "public" | "custom";
   isActive: boolean;
 };
-const emptyDraft: PlanDraft = { name: "", description: "", priceAmount: "", billingPeriod: "monthly", includedEmployees: "10", overagePrice: "0", features: [], isActive: true };
+const emptyDraft: PlanDraft = { name: "", description: "", priceAmount: "0", billingPeriod: "monthly", includedEmployees: "0", overagePrice: "", features: [], visibility: "public", isActive: true };
 const fromPlan = (plan: PlatformPlan): PlanDraft => ({
   name: plan.name,
   description: plan.description ?? "",
@@ -26,6 +27,7 @@ const fromPlan = (plan: PlatformPlan): PlanDraft => ({
   includedEmployees: String(plan.includedEmployees),
   overagePrice: plan.overagePrice,
   features: plan.features,
+  visibility: plan.visibility,
   isActive: plan.isActive,
 });
 
@@ -65,7 +67,7 @@ export default function PlatformPlansPage() {
 
   return (
     <div className="space-y-6">
-      <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">Commercial setup</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Plans</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Create the plans you offer and assign them to customer accounts. Employee limits are catalog metadata; enforcement is not enabled in this phase.</p></div>
+      <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">Commercial setup</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Plans</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Create the plans you offer and assign them to customer accounts. For flat per-employee pricing keep price and included employees at 0 and set the per-employee price. Public plans show on every owner's Billing page; custom plans only where you offer them.</p></div>
 
       <section id="plan-editor" className={panel}>
         <div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-sky-400/10 text-sky-300">{editingId ? <Pencil className="size-4" /> : <CirclePlus className="size-4" />}</span><div><h2 className="font-semibold text-white">{editingId ? "Edit plan" : "Create a plan"}</h2><p className="mt-1 text-xs text-slate-500">Pricing is stored in INR. Annual price is the full annual amount.</p></div></div>
@@ -75,7 +77,8 @@ export default function PlatformPlansPage() {
             <label className="space-y-2 text-xs font-medium text-slate-400">Price (INR)<input required type="number" min="0" step="0.01" value={draft.priceAmount} onChange={(event) => setDraft({ ...draft, priceAmount: event.target.value })} className={field} placeholder="999" /></label>
             <label className="space-y-2 text-xs font-medium text-slate-400">Billing period<select value={draft.billingPeriod} onChange={(event) => setDraft({ ...draft, billingPeriod: event.target.value as PlanDraft["billingPeriod"] })} className={field}><option value="monthly">Monthly</option><option value="annual">Annual</option></select></label>
             <label className="space-y-2 text-xs font-medium text-slate-400">Included employees<input required type="number" min="0" step="1" value={draft.includedEmployees} onChange={(event) => setDraft({ ...draft, includedEmployees: event.target.value })} className={field} /></label>
-            <label className="space-y-2 text-xs font-medium text-slate-400">Overage price per employee<input required type="number" min="0" step="0.01" value={draft.overagePrice} onChange={(event) => setDraft({ ...draft, overagePrice: event.target.value })} className={field} /></label>
+            <label className="space-y-2 text-xs font-medium text-slate-400">Visibility<select value={draft.visibility} onChange={(event) => setDraft({ ...draft, visibility: event.target.value as PlanDraft["visibility"] })} className={field}><option value="public">Public: every owner sees it</option><option value="custom">Custom: only offered organizations</option></select></label>
+            <label className="space-y-2 text-xs font-medium text-slate-400">Price per employee (beyond included)<input required type="number" min="0" step="0.01" value={draft.overagePrice} onChange={(event) => setDraft({ ...draft, overagePrice: event.target.value })} className={field} /></label>
             <label className="space-y-2 text-xs font-medium text-slate-400 md:col-span-2 xl:col-span-3">Description<input maxLength={500} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} className={field} placeholder="A short summary shown to platform admins" /></label>
           </div>
           <fieldset><legend className="text-xs font-medium text-slate-400">Included features</legend><div className="mt-2 flex flex-wrap gap-2">{features.map((feature) => <label key={feature} className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition ${draft.features.includes(feature) ? "border-sky-300/30 bg-sky-400/10 text-sky-200" : "border-white/10 bg-slate-950/50 text-slate-400 hover:border-white/20"}`}><input type="checkbox" checked={draft.features.includes(feature)} onChange={() => toggleFeature(feature)} className="accent-cyan-400" />{feature}</label>)}</div></fieldset>
@@ -89,7 +92,11 @@ export default function PlatformPlansPage() {
       <section className={`${panel} overflow-hidden p-0`}>
         <div className="flex items-center justify-between border-b border-white/5 px-5 py-4"><div><h2 className="font-semibold text-white">Plan catalog</h2><p className="mt-1 text-xs text-slate-500">{plans.data?.length ?? 0} plans</p></div><Sparkles className="size-5 text-sky-300" /></div>
         {plans.isPending ? <p role="status" className="p-8 text-center text-sm text-slate-400">Loading plans…</p> : plans.isError ? <p role="alert" className="p-8 text-center text-sm text-rose-300">{plans.error instanceof Error ? plans.error.message : "Could not load plans."}</p> : !plans.data?.length ? <div className="p-10 text-center"><BadgeCheck className="mx-auto size-8 text-slate-600" /><p className="mt-3 text-sm text-slate-400">No plans yet. Create your first plan above.</p></div> : (
-          <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">{plans.data.map((plan) => <article key={plan.id} className="rounded-xl border border-white/10 bg-slate-950/55 p-5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-semibold text-white">{plan.name}</h3><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${plan.isActive ? "bg-emerald-400/10 text-emerald-300" : "bg-slate-700 text-slate-400"}`}>{plan.isActive ? "Active" : "Archived"}</span></div><p className="mt-1 text-xs text-slate-500">{plan.description || "No description"}</p></div><button type="button" onClick={() => edit(plan)} aria-label={`Edit ${plan.name}`} className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-300 hover:bg-white/5"><Pencil className="size-4" /></button></div><div className="mt-5 flex items-baseline gap-1"><span className="text-2xl font-semibold text-white">₹{Number(plan.priceAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span><span className="text-xs text-slate-500">/{plan.billingPeriod === "monthly" ? "month" : "year"}</span></div><p className="mt-3 text-xs text-slate-400">{plan.includedEmployees} included employees · ₹{Number(plan.overagePrice).toLocaleString("en-IN")}/extra employee</p><div className="mt-4 flex flex-wrap gap-1.5">{plan.features.length ? plan.features.map((feature) => <span key={feature} className="rounded-md bg-slate-800 px-2 py-1 text-[10px] text-slate-300">{feature}</span>) : <span className="text-xs text-slate-600">No features selected</span>}</div></article>)}</div>
+          <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">{plans.data.map((plan) => <article key={plan.id} className="rounded-xl border border-white/10 bg-slate-950/55 p-5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-semibold text-white">{plan.name}</h3><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${plan.isActive ? "bg-emerald-400/10 text-emerald-300" : "bg-slate-700 text-slate-400"}`}>{plan.isActive ? "Active" : "Archived"}</span>{plan.visibility === "custom" && <span className="rounded-full bg-violet-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-violet-300">Custom</span>}</div><p className="mt-1 text-xs text-slate-500">{plan.description || "No description"}</p></div><button type="button" onClick={() => edit(plan)} aria-label={`Edit ${plan.name}`} className="grid size-8 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-300 hover:bg-white/5"><Pencil className="size-4" /></button></div>{Number(plan.priceAmount) === 0 && plan.includedEmployees === 0 ? (
+            <><div className="mt-5 flex items-baseline gap-1"><span className="text-2xl font-semibold text-white">₹{Number(plan.overagePrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span><span className="text-xs text-slate-500">per employee / {plan.billingPeriod === "monthly" ? "month" : "year"}</span></div><p className="mt-3 text-xs text-slate-400">Flat per-employee pricing</p></>
+          ) : (
+            <><div className="mt-5 flex items-baseline gap-1"><span className="text-2xl font-semibold text-white">₹{Number(plan.priceAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span><span className="text-xs text-slate-500">/{plan.billingPeriod === "monthly" ? "month" : "year"}</span></div><p className="mt-3 text-xs text-slate-400">{plan.includedEmployees} included employees · ₹{Number(plan.overagePrice).toLocaleString("en-IN")}/extra employee</p></>
+          )}<div className="mt-4 flex flex-wrap gap-1.5">{plan.features.length ? plan.features.map((feature) => <span key={feature} className="rounded-md bg-slate-800 px-2 py-1 text-[10px] text-slate-300">{feature}</span>) : <span className="text-xs text-slate-600">No features selected</span>}</div></article>)}</div>
         )}
       </section>
     </div>

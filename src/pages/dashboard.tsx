@@ -16,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { ErrorText } from "@/components/form-kit";
+import OnboardingChecklist from "@/components/onboarding-checklist";
 import { AdminCharts, EmployeeCharts } from "@/components/dashboard-charts";
 import { employeesQuery } from "@/hooks/use-api";
 import {
@@ -32,6 +33,7 @@ import {
   canManageEmployees,
   canManagePeople,
   getActiveOrganization,
+  hasManagerRole,
   getUser,
 } from "@/lib/session";
 
@@ -318,7 +320,7 @@ const Dashboard: React.FC = () => {
   const firstError = todayLogs.error ?? loans.error ?? leaves.error ?? holidaysQ.error ?? employees.error;
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-5">
+    <div className="mx-auto w-full max-w-360 space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-primary">
@@ -336,6 +338,11 @@ const Dashboard: React.FC = () => {
       </div>
 
       <ErrorText message={firstError?.message} />
+
+      {/* Setup matters in either view, so this follows the role rather than Manage / My view. */}
+      {organizationId && hasManagerRole(organizationId) && (
+        <OnboardingChecklist key={organizationId} organizationId={organizationId} />
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {isManager ? (
