@@ -1,0 +1,86 @@
+.platform-shell {
+  color-scheme: dark;
+  background-color: #0b1220;
+  color: #e2e8f0;
+}
+
+/* The customer app has global neumorphic rules. Keep the owner console crisp. */
+.platform-shell .rounded-xl.border:not(input):not(select):not(textarea),
+.platform-shell .rounded-2xl.border:not(input):not(select):not(textarea) {
+  border-color: #29384d !important;
+  background-color: #121d2e !important;
+  box-shadow: none !important;
+}
+
+.platform-shell .rounded-lg.border:not(input):not(select):not(textarea) {
+  border-color: #2b3a50 !important;
+  background-color: #111b2b !important;
+  box-shadow: none !important;
+}
+
+.platform-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.platform-shell select,
+.platform-shell textarea {
+  border: 1px solid #33445b !important;
+  background-color: #0b1423 !important;
+  box-shadow: none !important;
+  color: #e2e8f0 !important;
+}
+
+.platform-shell input::placeholder,
+.platform-shell textarea::placeholder {
+  color: #8291a7 !important;
+  opacity: 1;
+}
+
+.platform-shell input.platform-search-input {
+  border-width: 0 !important;
+  background-color: transparent !important;
+}
+
+.platform-shell input:focus,
+.platform-shell input:focus-visible,
+.platform-shell select:focus,
+.platform-shell select:focus-visible,
+.platform-shell textarea:focus,
+.platform-shell textarea:focus-visible {
+  border-color: #22b8cf !important;
+  outline: 2px solid rgb(34 184 207 / 18%) !important;
+  outline-offset: 1px;
+}
+
+.platform-shell [data-slot="button"] {
+  box-shadow: none !important;
+}
+
+.platform-shell a.rounded-lg.border,
+.platform-shell button.rounded-lg.border {
+  color: #d3deed;
+  transition: border-color 150ms, background-color 150ms, color 150ms;
+}
+
+.platform-shell a.rounded-lg.border:hover,
+.platform-shell button.rounded-lg.border:hover:not(:disabled) {
+  border-color: #40536d !important;
+  background-color: #1a2940 !important;
+  color: #f8fafc;
+}
+
+.platform-shell table thead {
+  background-color: #0d1727;
+  color: #98a8bd;
+}
+
+.platform-shell table tbody tr {
+  color: #dce5f1;
+}
+
+.platform-shell table tbody tr:hover {
+  background-color: #172438;
+}
+
+.platform-shell a:focus-visible,
+.platform-shell button:focus-visible {
+  outline: 2px solid #22b8cf;
+  outline-offset: 2px;
+}
