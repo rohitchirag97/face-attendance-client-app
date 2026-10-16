@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { FileDown, MessageCircle, Plus, ReceiptText, Search, Send, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
@@ -69,9 +69,12 @@ export default function PlatformInvoicesPage() {
   const sendWhatsApp = usePlatformBillingMutation<{ invoiceId: string }, { status: string }>((body) => `/invoices/${body.invoiceId}/send-whatsapp`, "POST");
   const selectedProfile = profile.data?.profile;
 
-  useEffect(() => {
+  // Reset the draft when the organization or its saved profile changes (during render, not in an effect).
+  const [draftFor, setDraftFor] = useState<{ organizationId: string; profile: typeof selectedProfile }>({ organizationId, profile: undefined });
+  if (draftFor.organizationId !== organizationId || draftFor.profile !== selectedProfile) {
+    setDraftFor({ organizationId, profile: selectedProfile });
     setProfileDraft(selectedProfile ? billingProfileDraft(selectedProfile) : emptyBillingProfile);
-  }, [organizationId, selectedProfile]);
+  }
 
   const updateItem = (index: number, fieldName: keyof LineItem, value: string) => {
     setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, [fieldName]: value } : item));

@@ -1,27 +1,11 @@
 import React from "react";
 import { Activity, Building2, CreditCard, FileText, LayoutDashboard, LogOut, MessageCircle, ShieldCheck } from "lucide-react";
-import { Link, NavLink, Outlet, redirect, useLoaderData, useNavigate } from "react-router";
-import type { LoaderFunctionArgs } from "react-router";
+import { Link, NavLink, Outlet, useLoaderData, useNavigate } from "react-router";
 
-import { ApiError, signOut } from "@/lib/api";
+import { signOut } from "@/lib/api";
 import { platformApi } from "@/lib/platform";
+import type { PlatformAdminSession } from "./platform-loader";
 import "./platform.css";
-
-type PlatformAdminSession = { id: string; name: string };
-
-export async function platformLoader({ request }: LoaderFunctionArgs) {
-  if (!localStorage.getItem("accessToken")) return redirect("/login");
-  if (new URL(request.url).pathname === "/platform/verify") return null;
-  try {
-    return await platformApi<PlatformAdminSession>("/me");
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 428) {
-      return redirect("/platform/verify");
-    }
-    if (error instanceof ApiError && error.status === 404) return redirect("/");
-    throw error;
-  }
-}
 
 const navigation = [
   { to: "/platform", label: "Overview", icon: LayoutDashboard, end: true },

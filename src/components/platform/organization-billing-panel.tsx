@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { CreditCard, FileText, MessageCircle } from "lucide-react";
 import { Link } from "react-router";
 
@@ -48,8 +48,10 @@ export function OrganizationBillingPanel({ organizationId }: { organizationId: s
   const saveOffers = usePlatformBillingMutation<{ planIds: string[] }, unknown>(`/organizations/${encodeURIComponent(organizationId)}/plan-offers`, "PUT");
   const saveSubscription = usePlatformBillingMutation<{ planId: string; status: string; startsAt?: string; nextBillingAt?: string; paidUntil?: string }, unknown>(`/organizations/${encodeURIComponent(organizationId)}/subscription`, "PUT");
 
-  useEffect(() => {
-    if (!billing.data) return;
+  // Refill the form whenever fresh billing data arrives (done during render, not in an effect).
+  const [loadedData, setLoadedData] = useState<typeof billing.data>(undefined);
+  if (billing.data && billing.data !== loadedData) {
+    setLoadedData(billing.data);
     setProfile(profileDraft(billing.data.profile));
     setPlanId(billing.data.subscription?.planId ?? "");
     setSubscriptionStatus(billing.data.subscription?.status ?? "active");
@@ -57,7 +59,7 @@ export function OrganizationBillingPanel({ organizationId }: { organizationId: s
     setNextBillingAt(billing.data.subscription?.nextBillingAt ?? "");
     setPaidUntil(billing.data.subscription?.paidUntil ?? "");
     setOfferedPlanIds(billing.data.offeredPlanIds);
-  }, [billing.data]);
+  }
 
   const saveBillingProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

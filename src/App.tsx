@@ -59,7 +59,8 @@ import PlatformPlansPage from "./pages/platform/platform-plans";
 import PlatformInvoicesPage from "./pages/platform/platform-invoices";
 import { PlatformMessagingPage } from "./pages/platform/platform-messaging";
 import PlatformInvoiceDetailPage from "./pages/platform/platform-invoice-detail";
-import { PlatformLayout, PlatformReauthPage, platformLoader } from "./pages/platform/platform-layout";
+import { PlatformLayout, PlatformReauthPage } from "./pages/platform/platform-layout";
+import { platformLoader } from "./pages/platform/platform-loader";
 import OrganizationSuspendedPage from "./pages/organization-suspended";
 
 import {
