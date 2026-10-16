@@ -15,6 +15,7 @@ export type EmploymentFormValues = {
   jobTitle: string;
   departmentId: string;
   shiftId: string;
+  branchId: string;
   employmentType: string;
   hireDate: string;
   compensationType: string;
@@ -29,6 +30,7 @@ export const emptyEmploymentValues: EmploymentFormValues = {
   jobTitle: "",
   departmentId: "",
   shiftId: "",
+  branchId: "",
   employmentType: "",
   hireDate: "",
   compensationType: "",
@@ -47,6 +49,7 @@ export const employmentToValues = (employment: Employment): EmploymentFormValues
   jobTitle: employment.jobTitle ?? "",
   departmentId: employment.departmentId ?? "",
   shiftId: employment.shiftId ?? "",
+  branchId: employment.branchId ?? "",
   employmentType: employment.employmentType ?? "",
   hireDate: employment.hireDate ?? "",
   compensationType: employment.compensationType ?? "",
@@ -84,6 +87,7 @@ export const valuesToEmploymentInput = (
     jobTitle: toTextOrNull(values.jobTitle),
     departmentId: values.departmentId || null,
     shiftId: values.shiftId || null,
+    branchId: values.branchId || null,
     employmentType: (values.employmentType || null) as EmploymentInput["employmentType"],
     hireDate: values.hireDate || null,
   };

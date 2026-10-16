@@ -39,16 +39,6 @@ export const StatutoryFields: React.FC<{
             <input id={id} maxLength={10} value={values.pan} disabled={disabled} onChange={(e) => set("pan", e.target.value)} className={`${inputClass} uppercase`} placeholder={panMasked ?? "ABCDE1234F"} />
           )}
         </Field>
-        <Field label="Gender">
-          {(id) => (
-            <select id={id} value={values.gender} disabled={disabled} onChange={(e) => set("gender", e.target.value)} className={inputClass}>
-              <option value="">Not set</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          )}
-        </Field>
         <Field label="Tax regime">
           {(id) => (
             <select id={id} value={values.taxRegime} disabled={disabled} onChange={(e) => set("taxRegime", e.target.value as "new" | "old")} className={inputClass}>
@@ -147,7 +137,6 @@ export const EmployeeStatutoryForm: React.FC<{ organizationId: string; employeeI
         uan: employee.uan ?? "",
         esiNumber: employee.esiNumber ?? "",
         pan: "",
-        gender: employee.gender ?? "",
         taxRegime: employee.taxRegime,
         declaredDeductions: String(employee.declaredDeductions || ""),
         pfApplicable: employee.pfApplicable,

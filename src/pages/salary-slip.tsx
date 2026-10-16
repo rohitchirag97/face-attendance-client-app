@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorText, Spinner } from "@/components/form-kit";
 import { formatHours, formatMoney, formatPeriod } from "@/lib/payroll-format";
+import DeliveryAddonHint from "@/components/delivery-addon-hint";
 import { payrollSlipQuery, useSendSlipEmail, useSendSlipWhatsApp } from "@/hooks/use-payroll-api";
 import { getActiveOrganizationId } from "@/lib/session";
 
@@ -76,6 +77,7 @@ const SalarySlip: React.FC = () => {
           </Button>
         </div>
       </div>
+      <DeliveryAddonHint addon={delivery.addon} />
       {isDraft && canSend && (
         <p className="text-xs text-muted-foreground print:hidden">Sending is available once the payroll is finalized.</p>
       )}
@@ -116,8 +118,12 @@ const SalarySlip: React.FC = () => {
             <h2 className="mb-1 text-sm font-semibold uppercase text-gray-500">Earnings</h2>
             <Row label="Basic pay" value={m(i.basePay)} />
             <Row label="Overtime" value={m(i.overtimePay)} />
+            {Number(i.offDayPay) > 0 && <Row label={`Off-day work (${Number(i.offDayDays)} day${Number(i.offDayDays) === 1 ? "" : "s"})`} value={m(i.offDayPay)} />}
             {i.componentLines.filter((l) => l.kind === "earning").map((l) => (
               <Row key={`e-${l.name}`} label={l.name} value={m(l.amount)} />
+            ))}
+            {i.bonusLines.map((l) => (
+              <Row key={l.bonusItemId} label={l.label} value={m(l.amount)} />
             ))}
             <div className="border-t"><Row label="Gross pay" value={m(i.grossPay)} strong /></div>
           </section>

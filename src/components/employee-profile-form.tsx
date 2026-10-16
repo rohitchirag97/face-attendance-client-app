@@ -4,8 +4,13 @@ import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorText, Field, Spinner } from "@/components/form-kit";
 import { inputClass } from "@/lib/form-utils";
+
+// Four letters for the bank, a zero, then six letters or digits for the branch.
+const INDIAN_IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 import {
+  BLOOD_GROUPS,
   employeeProfileQuery,
+  GENDER_OPTIONS,
   useSaveEmployeeProfile,
   type EmployeeProfile,
 } from "@/hooks/use-employee-records";
@@ -41,6 +46,23 @@ const Form: React.FC<{
       />
     );
 
+  const select =
+    (key: keyof EmployeeProfile, options: readonly { value: string; label: string }[]) =>
+    (id: string) => (
+      <select
+        id={id}
+        value={values[key]}
+        onChange={(e) => {
+          setSaved(false);
+          setValues((prev) => ({ ...prev, [key]: e.target.value }));
+        }}
+        className={inputClass}
+      >
+        <option value="">Not set</option>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    );
+
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -64,7 +86,11 @@ const Form: React.FC<{
     >
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold">Personal &amp; address</legend>
-        <Field label="Date of birth">{input("dateOfBirth", { type: "date" })}</Field>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Date of birth">{input("dateOfBirth", { type: "date" })}</Field>
+          <Field label="Gender">{select("gender", GENDER_OPTIONS)}</Field>
+          <Field label="Blood group">{select("bloodGroup", BLOOD_GROUPS.map((group) => ({ value: group, label: group })))}</Field>
+        </div>
         <Field label="Address line 1">{input("addressLine1", { maxLength: 200 })}</Field>
         <Field label="Address line 2">{input("addressLine2", { maxLength: 200 })}</Field>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -110,9 +136,18 @@ const Form: React.FC<{
               },
             })}
           </Field>
-          <Field label="IFSC / routing code">
-            {input("bankIfsc", { maxLength: 20, autoComplete: "off", className: `${inputClass} uppercase` })}
-          </Field>
+          <div>
+            <Field label="IFSC / routing code">
+              {input("bankIfsc", { maxLength: 20, autoComplete: "off", className: `${inputClass} uppercase` })}
+            </Field>
+            {/* Not blocked (foreign routing codes are allowed), but salary bank files only take Indian IFSCs. */}
+            {values.bankIfsc.trim() !== "" && !INDIAN_IFSC.test(values.bankIfsc.trim().toUpperCase()) && (
+              <p role="status" className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                Not an Indian IFSC: it must be 11 characters with 0 as the 5th, e.g. BARB0VJAHMD. Salary bank transfer files will skip this
+                employee.
+              </p>
+            )}
+          </div>
         </div>
         <Field label="UPI ID (optional)">{input("upiId", { maxLength: 100 })}</Field>
       </fieldset>

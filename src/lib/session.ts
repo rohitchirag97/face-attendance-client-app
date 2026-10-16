@@ -10,6 +10,8 @@ export type Organization = {
   /** With status pending_deletion: when it will be permanently erased. */
   deletionScheduledAt?: string | null;
   role?: "super_admin" | "admin" | "hr" | "employee";
+  /** An admin or HR limited to some branches: no finance or organization-wide settings. */
+  branchLimited?: boolean;
 };
 
 const isSelectableOrganization = (organization: Organization) =>
@@ -76,10 +78,10 @@ export const getActiveOrganization = () => {
     ) ?? organizations.find(isSelectableOrganization)
   );
 };
+const findOrganization = (organizationId: string | null | undefined) =>
+  organizationId ? getOrganizations().find((item) => item.id === organizationId) : getActiveOrganization();
 const hasRole = (organizationId: string | null | undefined, roles: string[]) => {
-  const organization = organizationId
-    ? getOrganizations().find((item) => item.id === organizationId)
-    : getActiveOrganization();
+  const organization = findOrganization(organizationId);
   return Boolean(
     organization &&
       isSelectableOrganization(organization) &&
@@ -97,8 +99,11 @@ export const setViewMode = (mode: ViewMode) => {
 };
 
 // Admin and HR users can switch between their management tools and self-service view.
+// A branch admin manages people in their branches but not payroll or settings, like HR.
 export const hasManagerRole = (organizationId?: string | null) =>
-  hasRole(organizationId, ["super_admin", "admin"]);
+  hasRole(organizationId, ["super_admin", "admin"]) && !findOrganization(organizationId)?.branchLimited;
+/** Limited to some branches (see Organization.branchLimited). */
+export const isBranchLimited = (organizationId?: string | null) => !!findOrganization(organizationId)?.branchLimited;
 export const hasPeopleManagerRole = (organizationId?: string | null) =>
   hasRole(organizationId, ["super_admin", "admin", "hr"]);
 export const canManageEmployees = (organizationId?: string | null) =>

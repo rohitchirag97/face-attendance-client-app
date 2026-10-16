@@ -3,6 +3,8 @@ import { request, useOrgMutation } from "@/hooks/use-payroll-api";
 
 export type EmployeeProfile = {
   dateOfBirth: string | null;
+  gender: "male" | "female" | "other" | null;
+  bloodGroup: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
   city: string | null;
@@ -168,3 +170,11 @@ export const useExitActions = (organizationId: string, employeeId: string) => {
   );
   return { save, complete, cancel };
 };
+
+export const GENDER_OPTIONS = [
+  { value: "female", label: "Female" },
+  { value: "male", label: "Male" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;

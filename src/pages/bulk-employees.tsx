@@ -43,7 +43,7 @@ const planRows = (rows: BulkEmployeeRow[], check: BulkCheckResult): Record<numbe
     } else if (codeHolder && codeHolder !== row.phone) {
       plans[row.row] = { action: "blocked", note: `Employee code "${code}" is already used by +${codeHolder}` };
     } else if (status === "existing-user") {
-      plans[row.row] = { action: "import", kind: "existing", note: `Has a HazriPro account${who} - will be added` };
+      plans[row.row] = { action: "import", kind: "existing", note: `Has a Vetanly account${who} - will be added` };
     } else if (status === "inactive-member") {
       plans[row.row] = { action: "import", kind: "reactivated", note: `Former employee${who} - will be reactivated` };
     } else {
@@ -233,7 +233,7 @@ const BulkEmployees: React.FC = () => {
             <p className="text-2xl font-semibold">{importRows.length}</p>
             <p className="text-sm font-medium">To be imported</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {brandNew} new · {existingAccounts} with an existing HazriPro account · {reactivated} reactivated
+              {brandNew} new · {existingAccounts} with an existing Vetanly account · {reactivated} reactivated
             </p>
           </div>
           <div className="rounded-lg border p-4">

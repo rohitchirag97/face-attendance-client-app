@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 
 import { StatusBadge } from "@/components/platform/status-badge";
 import { OrganizationBillingPanel } from "@/components/platform/organization-billing-panel";
+import { OrganizationMessagingPanel } from "@/components/platform/organization-messaging-panel";
 import { useAddPlatformNote, usePlatformOrganization, useReactivatePlatformOrganization, useSuspendPlatformOrganization } from "@/hooks/use-platform";
 import { formatPlatformDate } from "@/lib/platform";
 
@@ -66,6 +67,7 @@ export default function PlatformOrganizationDetailPage() {
       </div>
 
       <OrganizationBillingPanel organizationId={organization.id} />
+      <OrganizationMessagingPanel organizationId={organization.id} />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,.8fr)]">
         <section className={panel}>

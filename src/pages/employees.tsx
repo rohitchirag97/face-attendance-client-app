@@ -17,6 +17,7 @@ const Employees: React.FC = () => {
   );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [branch, setBranch] = useState("");
   const pageSize = 5;
 
   useEffect(() => {
@@ -43,10 +44,13 @@ const Employees: React.FC = () => {
   const organization = getActiveOrganization();
   const canAssignElevatedRoles = hasManagerRole(organizationId);
   const normalizedSearch = search.trim().toLowerCase();
-  const filteredEmployees = employees.filter((employee) =>
-    `${employee.fname} ${employee.lname} ${employee.phone} ${employee.role}`
-      .toLowerCase()
-      .includes(normalizedSearch),
+  const branchNames = [...new Set(employees.flatMap((employee) => (employee.branchName ? [employee.branchName] : [])))].sort();
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      (!branch || (branch === "none" ? !employee.branchName : employee.branchName === branch)) &&
+      `${employee.fname} ${employee.lname} ${employee.phone} ${employee.role} ${employee.branchName ?? ""}`
+        .toLowerCase()
+        .includes(normalizedSearch),
   );
   const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -77,7 +81,8 @@ const Employees: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex h-10 items-center gap-2 rounded-md border bg-background px-3 focus-within:ring-2 focus-within:ring-ring/30">
+      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex h-10 flex-1 items-center gap-2 rounded-md border bg-background px-3 focus-within:ring-2 focus-within:ring-ring/30">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <input
           aria-label="Search employees"
@@ -89,6 +94,22 @@ const Employees: React.FC = () => {
           }}
           className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
+      </div>
+        {branchNames.length > 0 && (
+          <select
+            aria-label="Filter by branch"
+            value={branch}
+            onChange={(event) => {
+              setBranch(event.target.value);
+              setPage(1);
+            }}
+            className="h-10 rounded-md border bg-background px-3 text-sm sm:w-56"
+          >
+            <option value="">All branches</option>
+            {branchNames.map((name) => <option key={name} value={name}>{name}</option>)}
+            <option value="none">No branch</option>
+          </select>
+        )}
       </div>
 
       {isPending ? (
@@ -141,7 +162,10 @@ const Employees: React.FC = () => {
                   <p className="truncate text-sm font-medium">
                     {employee.fname} {employee.lname}
                   </p>
-                  <p className="text-sm text-muted-foreground">+{employee.phone}</p>
+                  <p className="text-sm text-muted-foreground">
+                    +{employee.phone}
+                    {employee.branchName ? ` · ${employee.branchName}` : ""}
+                  </p>
                 </div>
                 <span className="w-fit rounded-full bg-secondary px-2.5 py-1 text-xs font-medium capitalize text-secondary-foreground">
                   {employee.role === "hr" ? "HR" : employee.role.replace("_", " ")}

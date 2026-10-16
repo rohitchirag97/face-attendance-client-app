@@ -73,10 +73,17 @@ export async function signOut() {
   clearSession();
 }
 
-/** Authenticated file download that saves the response as a file. */
-export async function apiDownload(path: string): Promise<void> {
+/** Authenticated file download that saves the response as a file; a body makes it a POST. */
+export async function apiDownload(path: string, body?: unknown): Promise<void> {
   const send = (token: string | null) =>
-    fetch(`${API_URL}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    fetch(`${API_URL}${path}`, {
+      method: body === undefined ? "GET" : "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
 
   let token = localStorage.getItem("accessToken");
   let res = await send(token);

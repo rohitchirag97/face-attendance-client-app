@@ -1,5 +1,5 @@
 import React from "react";
-import { Activity, Building2, CreditCard, FileText, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { Activity, Building2, CreditCard, FileText, LayoutDashboard, LogOut, MessageCircle, ShieldCheck } from "lucide-react";
 import { Link, NavLink, Outlet, redirect, useLoaderData, useNavigate } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 
@@ -28,6 +28,7 @@ const navigation = [
   { to: "/platform/organizations", label: "Organizations", icon: Building2, end: false },
   { to: "/platform/plans", label: "Plans", icon: CreditCard, end: false },
   { to: "/platform/invoices", label: "Invoices", icon: FileText, end: false },
+  { to: "/platform/messaging", label: "Messaging", icon: MessageCircle, end: false },
   { to: "/platform/audit", label: "Platform audit", icon: Activity, end: false },
 ];
 
@@ -44,11 +45,9 @@ export function PlatformLayout() {
       <header className="border-b border-white/10 bg-slate-950/95">
         <div className="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-xl border border-sky-300/20 bg-sky-400/10 text-sky-300">
-              <ShieldCheck className="size-5" />
-            </div>
+            <img src="/favicon.svg" alt="" className="size-10" />
             <div>
-              <p className="text-sm font-semibold tracking-wide text-white">HAZRIPRO</p>
+              <p className="text-sm font-semibold tracking-wide text-white">VETANLY</p>
               <p className="text-xs text-slate-400">Platform control room</p>
             </div>
           </div>

@@ -11,6 +11,14 @@ import TaxDeclarationPage from "./pages/tax-declaration";
 import TaxDeclarationReviewPage from "./pages/tax-declaration-review";
 import ShiftRosterPage from "./pages/shift-roster";
 import MySchedulePage from "./pages/my-schedule";
+import SettlementsPage from "./pages/settlements";
+import BonusPage from "./pages/bonus";
+import BranchesPage from "./pages/branches";
+import AccountingPage from "./pages/accounting";
+import AssetsPage from "./pages/assets";
+import MyAssetsPage from "./pages/my-assets";
+import InsightsPage from "./pages/insights";
+import MessagingPage from "./pages/messaging";
 import Profile from "./pages/profile";
 import VerifyOTP from "./pages/verify-otp";
 import CreateOrganization from "./pages/create-organization";
@@ -49,6 +57,7 @@ import PlatformOrganizationDetailPage from "./pages/platform/platform-organizati
 import PlatformAuditPage from "./pages/platform/platform-audit";
 import PlatformPlansPage from "./pages/platform/platform-plans";
 import PlatformInvoicesPage from "./pages/platform/platform-invoices";
+import { PlatformMessagingPage } from "./pages/platform/platform-messaging";
 import PlatformInvoiceDetailPage from "./pages/platform/platform-invoice-detail";
 import { PlatformLayout, PlatformReauthPage, platformLoader } from "./pages/platform/platform-layout";
 import OrganizationSuspendedPage from "./pages/organization-suspended";
@@ -102,6 +111,7 @@ const router = createBrowserRouter([
       { path: "organizations/:organizationId", Component: PlatformOrganizationDetailPage },
       { path: "plans", Component: PlatformPlansPage },
       { path: "invoices", Component: PlatformInvoicesPage },
+      { path: "messaging", Component: PlatformMessagingPage },
       { path: "invoices/:invoiceId", Component: PlatformInvoiceDetailPage },
       { path: "audit", Component: PlatformAuditPage },
     ],
@@ -236,6 +246,14 @@ const router = createBrowserRouter([
       { path: "tax-declaration", Component: TaxDeclarationPage },
       { path: "my-schedule", Component: MySchedulePage },
       { path: "shifts/roster", Component: ShiftRosterPage, loader: guardedLoader(canManagePeople) },
+      { path: "branches", Component: BranchesPage, loader: guardedLoader(canManagePeople) },
+      { path: "assets", Component: AssetsPage, loader: guardedLoader(canManagePeople) },
+      { path: "my-assets", Component: MyAssetsPage },
+      { path: "insights", Component: InsightsPage, loader: guardedLoader(canManagePeople) },
+      { path: "messaging", Component: MessagingPage, loader: guardedLoader(canManageEmployees) },
+      { path: "settlements", Component: SettlementsPage, loader: guardedLoader(canManageEmployees) },
+      { path: "bonus", Component: BonusPage, loader: guardedLoader(canManageEmployees) },
+      { path: "accounting", Component: AccountingPage, loader: guardedLoader(canManageEmployees) },
       { path: "tax-declarations/review", Component: TaxDeclarationReviewPage, loader: guardedLoader(canManagePeople) },
       { path: "loans/all", Component: LoanListPage, loader: guardedLoader(canManageEmployees) },
       { path: "leave", Component: Leave },

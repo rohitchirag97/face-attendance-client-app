@@ -29,11 +29,11 @@ const statusLine = (status: BillingStatus) => {
     case "inactive":
       return "Your free trial has not started yet.";
     case "trial":
-      return `Your free trial ends on ${formatDay(status.trialEndsAt)} (${days(status.daysLeft)} left). Everything is unlocked until then.`;
+      return `Your free trial ends on ${formatDay(status.trialEndsAt)} (${status.daysLeft === 0 ? "today" : `${days(status.daysLeft)} left`}). Everything is unlocked until then.`;
     case "paid":
       return `Paid until ${formatDay(status.accessEndsAt)}${status.planName ? ` on the ${status.planName} plan` : ""}.`;
     case "grace":
-      return `Your ${status.paidUntil ? "plan" : "trial"} ended on ${formatDay(status.accessEndsAt)}. Everything still works for ${days(status.daysLeft)}; after that the workspace becomes read-only.`;
+      return `Your ${status.paidUntil ? "plan" : "trial"} ended on ${formatDay(status.accessEndsAt)}. Everything still works ${status.daysLeft === 0 ? "until later today" : `for ${days(status.daysLeft)}`}; after that the workspace becomes read-only.`;
     case "read_only":
       return "Your workspace is read-only. You can view everything and attendance is still recorded, but payroll, new employees and sending documents are paused.";
   }

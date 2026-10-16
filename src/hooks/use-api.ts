@@ -205,6 +205,8 @@ export type Employee = {
   phone: string;
   role: "super_admin" | "admin" | "hr" | "employee";
   isActive: boolean;
+  branchId?: string | null;
+  branchName?: string | null;
 };
 
 export const employeesQuery = (organizationId: string) =>

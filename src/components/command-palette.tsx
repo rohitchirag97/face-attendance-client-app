@@ -28,6 +28,12 @@ import {
   CreditCard,
   Clock,
   Repeat,
+  Gift,
+  MapPin,
+  BookOpenCheck,
+  Package,
+  ChartNoAxesCombined,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,6 +121,7 @@ const CommandPalette: React.FC = () => {
       go("announcements", "Announcements", "/announcements", Megaphone, "announcement broadcast message notice news"),
       go("attendance-corrections", "Attendance corrections", "/attendance/corrections", ListChecks, "regularize regularisation missed punch fix"),
       go("holidays", "Holidays", "/holidays", CalendarDays),
+      go("my-assets", "My assets", "/my-assets", Package, "laptop phone sim id card company property acknowledge"),
       ...(!isHrManagementView
         ? [
             go("loans", "Loans & advances", "/loans", HandCoins, "apply loan advance"),
@@ -134,6 +141,9 @@ const CommandPalette: React.FC = () => {
         go("emp-new", "Add employee", "/employees/new", UserPlus, "create new staff"),
         go("emp-all", "View all employees", "/employees", ContactRound, "staff list deactivate"),
         go("overtime", "Overtime approvals", "/attendance/overtime", Timer, "overtime approve extra hours"),
+        go("branches", "Branches & locations", "/branches", MapPin, "office site store location geofence gps check-in branch manager"),
+        go("assets", "Assets", "/assets", Package, "laptop phone sim id card vehicle inventory handover return asset register"),
+        go("insights", "HR insights", "/insights", ChartNoAxesCombined, "analytics headcount attrition turnover attendance rate birthday anniversary payroll cost report dashboard"),
         go("departments", "Departments", "/departments", Building2),
         go("shifts", "Shifts", "/shifts", Clock, "timing"),
         go("statutory", "Statutory compliance", "/statutory", Landmark, "pf esi tds professional tax uan pan india"),
@@ -149,6 +159,10 @@ const CommandPalette: React.FC = () => {
         go("expenses-review", "Review expense claims", "/expenses/review", ListChecks, "approve reimbursement claims"),
         go("tax-review", "Review tax declarations", "/tax-declarations/review", ListChecks, "verify tds proofs 80c investment"),
         go("shift-roster", "Shift roster", "/shifts/roster", ListChecks, "rotation rota schedule swap night shift"),
+        go("settlements", "Full & final settlements", "/settlements", ListChecks, "fnf exit leaver gratuity leave encashment resignation"),
+        go("bonus", "Bonus & gratuity", "/bonus", Gift, "statutory bonus payment of bonus act diwali gratuity liability provision"),
+        go("accounting", "Accounting export", "/accounting", BookOpenCheck, "tally zoho books quickbooks journal voucher ledger export accountant"),
+        go("messaging", "Messaging", "/messaging", MessageCircle, "whatsapp email send salary slip balance top up wallet provider aisensy template delivery log"),
       );
     } else if (!isHrManagementView) {
       list.push(

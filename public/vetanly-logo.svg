@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="128" viewBox="0 0 520 128" role="img" aria-label="Vetanly">
+  <defs>
+    <linearGradient id="vetanly-logo-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6D4BF2"/>
+      <stop offset="1" stop-color="#4A2FC9"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="34" fill="url(#vetanly-logo-bg)"/>
+  <g fill="none" stroke="#fff" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M29 49 V36 a7 7 0 0 1 7 -7 H49"/>
+    <path d="M79 29 H92 a7 7 0 0 1 7 7 V49"/>
+    <path d="M99 79 V92 a7 7 0 0 1 -7 7 H79"/>
+    <path d="M49 99 H36 a7 7 0 0 1 -7 -7 V79"/>
+  </g>
+  <path d="M44 65 L58 79 L85 49" fill="none" stroke="#B9F5D0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="156" y="90" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="-2" fill="#16123A">vetanly</text>
+</svg>

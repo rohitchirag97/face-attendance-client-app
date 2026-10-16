@@ -67,6 +67,9 @@ export type PayrollSettings = {
   autoDeductLoans: boolean;
   paidHolidays: boolean;
   overtimeApprovalRequired: boolean;
+  offDayWorkPolicy: "manager" | "pay" | "comp_off";
+  weeklyOffWorkMultiplier: string;
+  holidayWorkMultiplier: string;
 };
 
 export type PayrollSettingsInput = {
@@ -84,6 +87,9 @@ export type PayrollSettingsInput = {
   autoDeductLoans: boolean;
   paidHolidays: boolean;
   overtimeApprovalRequired: boolean;
+  offDayWorkPolicy: PayrollSettings["offDayWorkPolicy"];
+  weeklyOffWorkMultiplier: number;
+  holidayWorkMultiplier: number;
 };
 
 export type PayrollRun = {
@@ -102,6 +108,8 @@ export type PayrollItem = {
   employeeCode: string | null;
   jobTitle: string | null;
   departmentName: string | null;
+  branchId?: string | null;
+  branchName?: string | null;
   compensationType: "hourly" | "daily" | "fixed_salary";
   compensationAmount: string;
   currencyCode: string;
@@ -127,6 +135,13 @@ export type PayrollItem = {
   /** Approved expense claims paid with this salary, outside gross pay. */
   reimbursements: string;
   reimbursementLines: { claimId: string; label: string; amount: string }[];
+  bonus: string;
+  bonusLines: { bonusItemId: string; label: string; amount: string }[];
+  /** Pay for days worked on a weekly off or holiday, inside gross pay. */
+  offDayDays: string;
+  offDayPay: string;
+  /** Worked off-days still waiting for a decision, so not paid in this run. */
+  offDayPendingDays: string;
   allowancesPay: string;
   componentDeductions: string;
   componentLines: PayrollComponentLine[];
@@ -135,7 +150,8 @@ export type PayrollItem = {
 export type PayrollRunDetail = { run: PayrollRun; items: PayrollItem[]; skipped?: string[] };
 
 /** Which channels the document's recipient can receive on: WhatsApp with a real phone, email with a linked Google account. */
-export type DeliveryChannels = { whatsapp: boolean; email: boolean };
+/** What can be sent now: the add-on must be on, the channel set up and the recipient reachable on it. */
+export type DeliveryChannels = { whatsapp: boolean; email: boolean; addon: boolean };
 
 export type PayrollSlip = {
   item: PayrollItem;
@@ -228,6 +244,8 @@ export type Employment = {
   jobTitle: string | null;
   departmentId: string | null;
   shiftId: string | null;
+  branchId: string | null;
+  branchName?: string | null;
   employmentType: "full_time" | "part_time" | "contractor" | "intern" | null;
   hireDate: string | null;
   compensationType: "hourly" | "daily" | "fixed_salary" | null;
@@ -251,6 +269,7 @@ export type EmploymentInput = {
   jobTitle: string | null;
   departmentId: string | null;
   shiftId: string | null;
+  branchId: string | null;
   employmentType: Employment["employmentType"];
   hireDate: string | null;
   compensationType: Employment["compensationType"];
@@ -265,8 +284,11 @@ export type Kiosk = {
   deviceIdentifier: string;
   name: string;
   locationName: string | null;
+  branchId: string | null;
   isActive: boolean;
   lastSeenAt: string | null;
+  /** A device currently holds this kiosk's key. */
+  paired: boolean;
 };
 
 export type AttendanceLog = {
@@ -372,11 +394,18 @@ export const kiosksQuery = (organizationId: string) =>
     queryFn: () => request<Kiosk[]>("/kiosk-device", organizationId),
   });
 
+export const PAGE_SIZE = 10;
+
 export const attendanceQuery = (
   organizationId: string,
-  filters: { employeeId?: string; from?: string; to?: string },
+  filters: { employeeId?: string; from?: string; to?: string; page?: number },
 ) => {
-  const params = new URLSearchParams({ limit: "100" });
+  // A page asks for one row more than it shows, so the caller knows whether a next page exists.
+  const params = new URLSearchParams(
+    filters.page === undefined
+      ? { limit: "100" }
+      : { limit: String(PAGE_SIZE + 1), offset: String(filters.page * PAGE_SIZE) },
+  );
   if (filters.employeeId) params.set("employeeId", filters.employeeId);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
@@ -397,12 +426,14 @@ export type DailyAttendance = {
   expectedMinutes: number | null;
   lateMinutes: number;
   earlyLeaveMinutes: number;
+  /** Time beyond the shift on a full day, before any approval. */
+  overtimeMinutes: number;
   status: "present" | "half_day" | "absent" | "incomplete" | "on_leave";
 };
 
 export const dailyAttendanceQuery = (
   organizationId: string,
-  filters: { from: string; to: string; employeeId?: string },
+  filters: { from: string; to: string; employeeId?: string; branchId?: string },
 ) => {
   const params = new URLSearchParams({
     from: filters.from,
@@ -410,10 +441,32 @@ export const dailyAttendanceQuery = (
     utcOffsetMinutes: String(-new Date().getTimezoneOffset()),
   });
   if (filters.employeeId) params.set("employeeId", filters.employeeId);
+  if (filters.branchId) params.set("branchId", filters.branchId);
   return queryOptions({
     queryKey: ["attendance", organizationId, "daily", filters] as const,
     queryFn: () =>
       request<DailyAttendance[]>("/attendance/daily", organizationId, undefined, undefined, `&${params}`),
+  });
+};
+
+/** One page of the daily summary; the server filters by status before slicing. */
+export const dailyAttendancePageQuery = (
+  organizationId: string,
+  filters: { from: string; to: string; branchId?: string; status?: string; page: number },
+) => {
+  const params = new URLSearchParams({
+    from: filters.from,
+    to: filters.to,
+    utcOffsetMinutes: String(-new Date().getTimezoneOffset()),
+    limit: String(PAGE_SIZE),
+    offset: String(filters.page * PAGE_SIZE),
+  });
+  if (filters.branchId) params.set("branchId", filters.branchId);
+  if (filters.status) params.set("status", filters.status);
+  return queryOptions({
+    queryKey: ["attendance", organizationId, "daily-page", filters] as const,
+    queryFn: () =>
+      request<{ rows: DailyAttendance[]; total: number }>("/attendance/daily/page", organizationId, undefined, undefined, `&${params}`),
   });
 };
 
@@ -579,7 +632,8 @@ export const useDeleteShift = (organizationId: string) =>
     request(`/shift/${id}`, organizationId, "DELETE"),
   );
 
-export type Holiday = { id: string; date: string; name: string };
+/** branchId null: a holiday for every branch. */
+export type Holiday = { id: string; date: string; name: string; branchId?: string | null; branchName?: string | null };
 
 export const holidaysQuery = (organizationId: string) =>
   queryOptions({
@@ -591,7 +645,7 @@ export const useAddHoliday = (organizationId: string) =>
   useOrgMutation(
     organizationId,
     [["holidays", organizationId]],
-    (body: { name: string; date: string; endDate?: string }) =>
+    (body: { name: string; date: string; endDate?: string; branchId?: string }) =>
       request("/holiday", organizationId, "POST", body),
   );
 
@@ -652,7 +706,7 @@ export const useCreateKiosk = (organizationId: string) =>
   useOrgMutation(
     organizationId,
     [["kiosks", organizationId]],
-    (body: { deviceIdentifier: string; name: string; locationName: string | null }) =>
+    (body: { deviceIdentifier: string; name: string; locationName: string | null; branchId?: string | null }) =>
       request<Kiosk & { apiKey: string }>("/kiosk-device", organizationId, "POST", body),
   );
 
@@ -660,14 +714,30 @@ export const useUpdateKiosk = (organizationId: string) =>
   useOrgMutation(
     organizationId,
     [["kiosks", organizationId]],
-    (vars: { id: string; isActive: boolean }) =>
-      request(`/kiosk-device/${vars.id}`, organizationId, "PATCH", { isActive: vars.isActive }),
+    ({ id, ...changes }: { id: string; isActive?: boolean; branchId?: string | null }) =>
+      request(`/kiosk-device/${id}`, organizationId, "PATCH", changes),
   );
 
 export const useRotateKioskKey = (organizationId: string) =>
   useOrgMutation(organizationId, [], (id: string) =>
     request<{ id: string; apiKey: string }>(
       `/kiosk-device/${id}/rotate-key`,
+      organizationId,
+      "POST",
+    ),
+  );
+
+export const useUnpairKiosk = (organizationId: string) =>
+  useOrgMutation(organizationId, [["kiosks", organizationId]], (id: string) =>
+    request(`/kiosk-device/${id}/unpair`, organizationId, "POST"),
+  );
+
+export type KioskCodeKind = "pairing-code" | "enrollment-code";
+
+export const useKioskCode = (organizationId: string) =>
+  useOrgMutation(organizationId, [], ({ id, kind }: { id: string; kind: KioskCodeKind }) =>
+    request<{ code: string; expiresInSeconds: number }>(
+      `/kiosk-device/${id}/${kind}`,
       organizationId,
       "POST",
     ),
@@ -713,6 +783,9 @@ export type LeaveType = {
   name: string;
   isPaid: boolean;
   annualAllowanceDays: string | null;
+  carryForwardMaxDays: string | null;
+  isCompOff: boolean;
+  compOffValidityDays: number | null;
   isActive: boolean;
 };
 
@@ -739,10 +812,74 @@ export type LeaveRequest = {
 export type LeaveBalance = {
   leaveTypeId: string;
   name: string;
+  isCompOff: boolean;
   allowanceDays: number | null;
+  carriedForwardDays: number;
+  creditedDays: number;
   usedDays: number;
   remainingDays: number | null;
 };
+
+export type OffDayWork = {
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  kind: "holiday" | "weekly_off";
+  days: 0.5 | 1;
+  workedMinutes: number | null;
+  requestedOutcome: "comp_off" | "pay" | null;
+  outcome: "comp_off" | "pay" | "none" | null;
+  automatic: boolean;
+};
+
+export type LeaveCredit = {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  leaveTypeName: string;
+  workedOn: string;
+  days: string;
+  reason: string | null;
+};
+
+const offsetParam = () => `&utcOffsetMinutes=${-new Date().getTimezoneOffset()}`;
+
+export const offDayWorkQuery = (organizationId: string, mine = false) =>
+  queryOptions({
+    queryKey: ["off-day-work", organizationId, mine] as const,
+    queryFn: () =>
+      request<OffDayWork[]>("/leave/off-day-work", organizationId, undefined, undefined, offsetParam() + (mine ? "&mine=true" : "")),
+  });
+
+export const leaveCreditsQuery = (organizationId: string) =>
+  queryOptions({
+    queryKey: ["leave-credits", organizationId] as const,
+    queryFn: () => request<LeaveCredit[]>("/leave/credits", organizationId),
+  });
+
+const creditKeys = (organizationId: string) => [
+  ["leave-credits", organizationId],
+  ["off-day-work", organizationId],
+  ["leave-balances", organizationId],
+];
+
+export const useRequestOffDayOutcome = (organizationId: string) =>
+  useOrgMutation(organizationId, creditKeys(organizationId), (vars: { date: string; outcome: "comp_off" | "pay" }) =>
+    request("/leave/off-day-work/request", organizationId, "POST", { ...vars, utcOffsetMinutes: -new Date().getTimezoneOffset() }),
+  );
+
+export const useDecideOffDayWork = (organizationId: string) =>
+  useOrgMutation(
+    organizationId,
+    creditKeys(organizationId),
+    (vars: { employeeId: string; date: string; outcome: "comp_off" | "pay" | "none"; leaveTypeId?: string }) =>
+      request("/leave/off-day-work/decide", organizationId, "POST", { ...vars, utcOffsetMinutes: -new Date().getTimezoneOffset() }),
+  );
+
+export const useRevokeLeaveCredit = (organizationId: string) =>
+  useOrgMutation(organizationId, creditKeys(organizationId), (id: string) =>
+    request(`/leave/credits/${id}`, organizationId, "DELETE"),
+  );
 
 export const leaveTypesQuery = (organizationId: string) =>
   queryOptions({
@@ -776,6 +913,9 @@ export const useSaveLeaveType = (organizationId: string) =>
       name?: string;
       isPaid?: boolean;
       annualAllowanceDays?: number | null;
+      carryForwardMaxDays?: number | null;
+      isCompOff?: boolean;
+      compOffValidityDays?: number | null;
       isActive?: boolean;
     }) => {
       const { id, ...body } = vars;

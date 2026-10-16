@@ -44,7 +44,7 @@ const BillingBanner: React.FC<{ organizationId: string | null }> = ({ organizati
   if (data.state === "trial") {
     tone = data.daysLeft > 3 ? "info" : "warning";
     canDismiss = data.daysLeft > 3;
-    message = `${days(data.daysLeft)} left in your free trial.`;
+    message = data.daysLeft === 0 ? "Your free trial ends today." : `${days(data.daysLeft)} left in your free trial.`;
     action = "Upgrade";
   } else if (data.state === "paid") {
     if (data.daysLeft > 5) return null;
@@ -54,7 +54,7 @@ const BillingBanner: React.FC<{ organizationId: string | null }> = ({ organizati
     action = "Renew";
   } else if (data.state === "grace") {
     tone = "danger";
-    message = `Your ${data.paidUntil ? "plan" : "free trial"} has ended. Upgrade to keep running payroll. Your workspace becomes read-only in ${days(data.daysLeft)}.`;
+    message = `Your ${data.paidUntil ? "plan" : "free trial"} has ended. Upgrade to keep running payroll. Your workspace becomes read-only ${data.daysLeft === 0 ? "later today" : `in ${days(data.daysLeft)}`}.`;
     action = "Upgrade now";
   } else {
     tone = "danger";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams, useNavigate } from "react-router";
+import { Link, useSearchParams, useNavigate } from "react-router";
 import { CheckCircle2, FileText, Loader2, Trash2, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorText, Field, PageHeader, Spinner } from "@/components/form-kit";
@@ -37,6 +37,8 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
   const [, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [actionError, setActionError] = useState<string | null>(null);
+  // Payroll runs cover the whole organization; the view can be narrowed to one branch.
+  const [branchName, setBranchName] = useState("");
 
   if (isLoading) return <Spinner />;
   if (error || !data) return <ErrorText message={error?.message ?? "Payroll run not found"} />;
@@ -44,6 +46,7 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
   const { run, items } = data;
   const isDraft = run.status === "draft";
   const incomplete = items.filter((i) => i.incompleteDays > 0);
+  const offDayPending = items.filter((i) => Number(i.offDayPendingDays) > 0);
   const totals = items.reduce(
     (acc, i) => ({
       gross: acc.gross + Number(i.grossPay),
@@ -59,6 +62,10 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
     setActionError(null);
     finalize.mutate(runId, { onError: (e) => setActionError(e.message) });
   };
+
+  const branchNames = [...new Set(items.flatMap((i) => (i.branchName ? [i.branchName] : [])))].sort();
+  const shown = branchName ? items.filter((i) => i.branchName === branchName) : items;
+  const shownNet = shown.reduce((sum, i) => sum + Number(i.netPay), 0);
 
   const handleDelete = () => {
     if (!window.confirm("Delete this draft payroll?")) return;
@@ -103,7 +110,26 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
           Fix the attendance entries and regenerate if needed.
         </p>
       )}
+      {isDraft && offDayPending.length > 0 && (
+        <p className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-700">
+          Work on off days is waiting for a decision, so it is not paid in this run:{" "}
+          {offDayPending.map((i) => `${i.employeeName} (${Number(i.offDayPendingDays)} day${Number(i.offDayPendingDays) === 1 ? "" : "s"})`).join(", ")}.{" "}
+          <Link to="/leave" className="font-medium underline">Decide on the Leave page</Link>, then regenerate.
+        </p>
+      )}
       <ErrorText message={actionError} />
+
+      {branchNames.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <select aria-label="Branch" value={branchName} onChange={(e) => setBranchName(e.target.value)} className="h-9 rounded-md border bg-background px-2">
+            <option value="">All branches</option>
+            {branchNames.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+          {branchName && shown[0] && (
+            <span className="text-muted-foreground">{shown.length} employee(s) · net {formatMoney(shownNet, shown[0].currencyCode)}</span>
+          )}
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
@@ -120,11 +146,11 @@ const RunDetail: React.FC<{ organizationId: string; runId: string; skipped: stri
             </tr>
           </thead>
           <tbody>
-            {items.map((i) => (
+            {shown.map((i) => (
               <tr key={i.id} className="border-b last:border-0">
                 <td className="py-2 pr-3">
                   <div className="font-medium">{i.employeeName}</div>
-                  <div className="text-xs text-muted-foreground">{i.employeeCode ?? i.jobTitle ?? ""}</div>
+                  <div className="text-xs text-muted-foreground">{[i.employeeCode ?? i.jobTitle, i.branchName].filter(Boolean).join(" · ")}</div>
                 </td>
                 <td className="px-3 text-muted-foreground">
                   {i.presentDays} / {i.halfDays} / {Number(i.paidLeaveDays) + Number(i.unpaidLeaveDays)} / {i.absentDays}

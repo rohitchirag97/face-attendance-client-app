@@ -7,7 +7,7 @@ import { signOut } from "@/lib/api";
 import { getOrganizations, hasSelectableOrganization, type Organization } from "@/lib/session";
 
 const describe = (organization: Organization) => {
-  if (organization.status === "suspended") return "Suspended by HazriPro. Contact support to restore access.";
+  if (organization.status === "suspended") return "Suspended by Vetanly. Contact support to restore access.";
   if (organization.status === "pending_deletion") return "Scheduled for permanent deletion.";
   return "Paused by the owner.";
 };

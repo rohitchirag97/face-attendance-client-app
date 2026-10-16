@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
+import { hasManagerRole } from "@/lib/session";
 import { ListPlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorText, Field, Spinner } from "@/components/form-kit";
@@ -191,6 +193,11 @@ const ExitCard: React.FC<{ organizationId: string; employeeId: string; isSelf: b
             {exit.noticeDays} days notice · last working day {exit.lastWorkingDay}
           </p>
           {exit.reason && <p className="text-muted-foreground">Reason: {exit.reason}</p>}
+          {hasManagerRole(organizationId) && !isSelf && (
+            <Link to={`/settlements?employee=${employeeId}`} className="inline-block pt-1 font-medium text-primary hover:underline">
+              Open full &amp; final settlement →
+            </Link>
+          )}
         </div>
       )}
 

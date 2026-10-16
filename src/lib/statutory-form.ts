@@ -4,7 +4,6 @@ export type StatutoryValues = {
   uan: string;
   esiNumber: string;
   pan: string;
-  gender: string;
   taxRegime: "new" | "old";
   declaredDeductions: string;
   pfApplicable: boolean;
@@ -15,7 +14,6 @@ export const emptyStatutoryValues: StatutoryValues = {
   uan: "",
   esiNumber: "",
   pan: "",
-  gender: "",
   taxRegime: "new",
   declaredDeductions: "",
   pfApplicable: true,
@@ -25,7 +23,6 @@ export const emptyStatutoryValues: StatutoryValues = {
 export const statutoryValuesToInput = (values: StatutoryValues): EmployeeStatutoryInput => ({
   uan: values.uan.trim(),
   esiNumber: values.esiNumber.trim(),
-  gender: values.gender as "male" | "female" | "other" | "",
   pfApplicable: values.pfApplicable,
   esiApplicable: values.esiApplicable,
   taxRegime: values.taxRegime,

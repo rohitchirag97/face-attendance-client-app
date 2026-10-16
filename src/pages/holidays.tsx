@@ -6,6 +6,7 @@ import { EmptyState, ErrorText, Field, PageHeader, Spinner } from "@/components/
 import { inputClass } from "@/lib/form-utils";
 import { holidaysQuery, useAddHoliday, useDeleteHoliday } from "@/hooks/use-payroll-api";
 import { canManagePeople, getActiveOrganizationId } from "@/lib/session";
+import { branchesQuery } from "@/hooks/use-branches";
 
 const formatDay = (date: string) =>
   new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
@@ -23,6 +24,13 @@ const Holidays: React.FC = () => {
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const { data: branchData } = useQuery(branchesQuery(organizationId, isManager));
+  const branches = (branchData?.branches ?? []).filter((b) => b.isActive && b.manageable);
+  const limited = !!branchData?.limitedTo;
+  const [branchId, setBranchId] = useState("");
+  // A branch manager adds holidays for their own branches only, never company-wide ones.
+  const canEdit = (holidayBranchId: string | null | undefined) =>
+    !limited || (!!holidayBranchId && branches.some((b) => b.id === holidayBranchId));
   const [error, setError] = useState<string | null>(null);
 
   const byYear = useMemo(() => {
@@ -40,8 +48,9 @@ const Holidays: React.FC = () => {
     if (!name.trim()) return setError("Holiday name is required.");
     if (!date) return setError("Pick a date.");
     if (endDate && endDate < date) return setError("End date cannot be before the start date.");
+    const chosenBranch = branchId || (limited ? branches[0]?.id ?? "" : "");
     add.mutate(
-      { name: name.trim(), date, ...(endDate ? { endDate } : {}) },
+      { name: name.trim(), date, ...(endDate ? { endDate } : {}), ...(chosenBranch ? { branchId: chosenBranch } : {}) },
       {
         onSuccess: () => {
           setName("");
@@ -77,6 +86,16 @@ const Holidays: React.FC = () => {
               <input id={id} type="date" value={endDate} min={date || undefined} onChange={(e) => setEndDate(e.target.value)} className={inputClass} />
             )}
           </Field>
+          {branches.length > 0 && (
+            <Field label="Applies to">
+              {(id) => (
+                <select id={id} value={branchId} onChange={(e) => setBranchId(e.target.value)} className={inputClass}>
+                  {!limited && <option value="">All branches</option>}
+                  {branches.map((b) => <option key={b.id} value={b.id}>{b.name} only</option>)}
+                </select>
+              )}
+            </Field>
+          )}
           <div className="flex items-end sm:justify-end">
             <Button type="submit" className="h-10" disabled={add.isPending}>
               {add.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
@@ -100,7 +119,8 @@ const Holidays: React.FC = () => {
                 <li key={holiday.id} className="flex items-center gap-3 p-3">
                   <span className="w-28 shrink-0 text-sm text-muted-foreground">{formatDay(holiday.date)}</span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{holiday.name}</span>
-                  {isManager && (
+                  {holiday.branchName && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{holiday.branchName}</span>}
+                  {isManager && canEdit(holiday.branchId) && (
                     <Button
                       variant="destructive"
                       size="icon"

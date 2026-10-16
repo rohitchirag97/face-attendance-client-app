@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, Plus } from "lucide-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   EmptyState,
@@ -12,7 +12,8 @@ import {
 import { TimeInput } from "@/components/time-input";
 import { formatDateTime, formatTime12Hour, inputClass } from "@/lib/form-utils";
 import { employeesQuery } from "@/hooks/use-api";
-import { attendanceQuery, dailyAttendanceQuery, leaveRequestsQuery, leaveTypesQuery, useBulkManualAttendance, useManualAttendance } from "@/hooks/use-payroll-api";
+import { branchesQuery } from "@/hooks/use-branches";
+import { attendanceQuery, dailyAttendancePageQuery, dailyAttendanceQuery, leaveRequestsQuery, PAGE_SIZE, leaveTypesQuery, useBulkManualAttendance, useManualAttendance } from "@/hooks/use-payroll-api";
 import { canManagePeople, getActiveOrganizationId } from "@/lib/session";
 
 const toIso = (localValue: string) => (localValue ? new Date(localValue).toISOString() : undefined);
@@ -142,6 +143,7 @@ const BulkEntry: React.FC<{ organizationId: string }> = ({ organizationId }) => 
   const bulk = useBulkManualAttendance(organizationId);
   const today = new Date().toLocaleDateString("en-CA");
   const [date, setDate] = useState(today);
+  const [branchId, setBranchId] = useState("");
   const { data: daily = [] } = useQuery({
     ...dailyAttendanceQuery(organizationId, { from: date, to: date }),
     enabled: Boolean(date),
@@ -154,7 +156,7 @@ const BulkEntry: React.FC<{ organizationId: string }> = ({ organizationId }) => 
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<{ done: number; failures: string[] } | null>(null);
 
-  const people = employees.filter((e) => e.isActive);
+  const people = employees.filter((e) => e.isActive && (!branchId || e.branchId === branchId));
   const existing = new Map(daily.map((d) => [d.employeeId, d]));
   // Anything other than "absent" means a punch or leave already exists for that day.
   const isLocked = (id: string) => {
@@ -237,6 +239,7 @@ const BulkEntry: React.FC<{ organizationId: string }> = ({ organizationId }) => 
         <Field label="Date">
         {(id) => <input id={id} type="date" max={today} value={date} onChange={(e) => changeDate(e.target.value)} className={inputClass} />}
         </Field>
+        <BranchSelect organizationId={organizationId} value={branchId} onChange={setBranchId} />
         <Field label="Leave type (for On leave)">
           {(id) => (
             <select id={id} value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={inputClass}>
@@ -367,9 +370,25 @@ const BulkEntry: React.FC<{ organizationId: string }> = ({ organizationId }) => 
 };
 
 const ManualSection: React.FC<{ organizationId: string }> = ({ organizationId }) => {
+  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"single" | "bulk">("bulk");
   return (
-    <div className="space-y-3">
+    <section className="rounded-xl border">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="manual-attendance"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 p-4 text-left"
+      >
+        <span>
+          <span className="block font-medium">Record attendance manually</span>
+          <span className="block text-sm text-muted-foreground">Bulk or single entry for employees who could not use a kiosk.</span>
+        </span>
+        <ChevronDown className={`size-5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+    <div id="manual-attendance" className="space-y-3 border-t p-4">
       <div className="inline-flex rounded-lg border p-1">
         {(["bulk", "single"] as const).map((value) => (
           <button
@@ -386,6 +405,40 @@ const ManualSection: React.FC<{ organizationId: string }> = ({ organizationId })
       </div>
       {mode === "bulk" ? <BulkEntry organizationId={organizationId} /> : <ManualEntry organizationId={organizationId} />}
     </div>
+      )}
+    </section>
+  );
+};
+
+/** Previous / next controls; `total` is known for the daily summary, while raw logs only know whether more exist. */
+const Pager: React.FC<{ page: number; onPage: (page: number) => void; hasNext: boolean; total?: number; fetching: boolean }> = ({
+  page,
+  onPage,
+  hasNext,
+  total,
+  fetching,
+}) => {
+  if (page === 0 && !hasNext) return null;
+  const pages = total === undefined ? undefined : Math.max(1, Math.ceil(total / PAGE_SIZE));
+  return (
+    <nav aria-label="Pagination" className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-muted-foreground">
+        Page {page + 1}
+        {pages !== undefined && ` of ${pages}`}
+        {total !== undefined && ` · ${total} entries`}
+        {fetching && <Loader2 className="ml-2 inline size-3.5 animate-spin" />}
+      </span>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onPage(page - 1)}>
+          <ChevronLeft />
+          Previous
+        </Button>
+        <Button variant="outline" size="sm" disabled={!hasNext} onClick={() => onPage(page + 1)}>
+          Next
+          <ChevronRight />
+        </Button>
+      </div>
+    </nav>
   );
 };
 
@@ -423,32 +476,59 @@ const dayStatusLabel = {
   incomplete: "Incomplete",
 };
 
+/** Branch filter for managers when the organization has branches; empty means every branch they manage. */
+const BranchSelect: React.FC<{ organizationId: string; value: string; onChange: (value: string) => void }> = ({ organizationId, value, onChange }) => {
+  const { data } = useQuery(branchesQuery(organizationId));
+  const branches = (data?.branches ?? []).filter((b) => b.manageable);
+  if (branches.length === 0) return null;
+  return (
+    <Field label="Branch">
+      {(id) => (
+        <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+          <option value="">{data?.limitedTo ? "All my branches" : "All branches"}</option>
+          {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      )}
+    </Field>
+  );
+};
+
 const DailySummary: React.FC<{ organizationId: string; isManager: boolean }> = ({
   organizationId,
   isManager,
 }) => {
   const [from, setFrom] = useState(dateInput(6));
   const [to, setTo] = useState(dateInput());
+  const [branchId, setBranchId] = useState("");
   const [status, setStatus] = useState("");
-  const { data, isLoading, error } = useQuery({
-    ...dailyAttendanceQuery(organizationId, { from, to }),
+  const [page, setPage] = useState(0);
+  // Any filter change starts again from the first page.
+  const filter = (set: (value: string) => void) => (value: string) => {
+    set(value);
+    setPage(0);
+  };
+  const { data, isLoading, isFetching, error } = useQuery({
+    ...dailyAttendancePageQuery(organizationId, { from, to, branchId: branchId || undefined, status: status || undefined, page }),
     enabled: Boolean(from && to && from <= to),
+    placeholderData: keepPreviousData,
     refetchInterval: 5_000,
   });
-  const rows = (data ?? []).filter((row) => !status || row.status === status);
+  const rows = data?.rows ?? [];
+  const total = data?.total ?? 0;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <Field label="From">
-          {(id) => <input id={id} type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />}
+          {(id) => <input id={id} type="date" value={from} onChange={(e) => filter(setFrom)(e.target.value)} className={inputClass} />}
         </Field>
         <Field label="To">
-          {(id) => <input id={id} type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />}
+          {(id) => <input id={id} type="date" value={to} onChange={(e) => filter(setTo)(e.target.value)} className={inputClass} />}
         </Field>
+        {isManager && <BranchSelect organizationId={organizationId} value={branchId} onChange={filter(setBranchId)} />}
         <Field label="Status">
           {(id) => (
-            <select id={id} value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
+            <select id={id} value={status} onChange={(e) => filter(setStatus)(e.target.value)} className={inputClass}>
               <option value="">All</option>
               {Object.entries(dayStatusLabel).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -475,6 +555,7 @@ const DailySummary: React.FC<{ organizationId: string; isManager: boolean }> = (
                 <th className="p-3">Out</th>
                 <th className="p-3">Worked</th>
                 <th className="p-3">Expected</th>
+                <th className="p-3">Overtime</th>
                 <th className="p-3">Late / early</th>
                 <th className="p-3">Status</th>
               </tr>
@@ -488,6 +569,9 @@ const DailySummary: React.FC<{ organizationId: string; isManager: boolean }> = (
                   <td className="p-3">{timeText(row.lastCheckOut)}</td>
                   <td className="p-3">{hoursText(row.workedMinutes)}</td>
                   <td className="p-3">{hoursText(row.expectedMinutes)}</td>
+                  <td className={`p-3 ${row.overtimeMinutes > 0 ? "font-medium text-primary" : "text-muted-foreground"}`}>
+                    {row.overtimeMinutes > 0 ? hoursText(row.overtimeMinutes) : "–"}
+                  </td>
                   <td className="p-3 text-xs text-muted-foreground">
                     {row.lateMinutes > 0 && `Late ${row.lateMinutes}m`}
                     {row.lateMinutes > 0 && row.earlyLeaveMinutes > 0 && " · "}
@@ -505,6 +589,7 @@ const DailySummary: React.FC<{ organizationId: string; isManager: boolean }> = (
           </table>
         </div>
       )}
+      <Pager page={page} onPage={setPage} hasNext={(page + 1) * PAGE_SIZE < total} total={total} fetching={isFetching && !isLoading} />
     </div>
   );
 };
@@ -515,13 +600,19 @@ const Attendance: React.FC = () => {
   const [view, setView] = useState<"daily" | "logs">("daily");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const { data: logs, isLoading, error } = useQuery({
+  const [page, setPage] = useState(0);
+  const { data, isLoading, isFetching, error } = useQuery({
     ...attendanceQuery(organizationId, {
       from: toIso(from),
       to: to ? toIso(`${to}T23:59:59`) : undefined,
+      page,
     }),
+    // Lazy: nothing is fetched until the tab is opened, then only the visible page.
+    enabled: view === "logs",
+    placeholderData: keepPreviousData,
     refetchInterval: 5_000,
   });
+  const logs = data?.slice(0, PAGE_SIZE);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -557,10 +648,16 @@ const Attendance: React.FC = () => {
         <>
           <div className="flex flex-wrap items-end gap-3">
         <Field label="From">
-          {(id) => <input id={id} type="date" value={from} onChange={(e) => setFrom(e.target.value ? `${e.target.value}T00:00:00` : "")} className={inputClass} />}
+          {(id) => <input id={id} type="date" value={from} onChange={(e) => {
+            setFrom(e.target.value ? `${e.target.value}T00:00:00` : "");
+            setPage(0);
+          }} className={inputClass} />}
         </Field>
         <Field label="To">
-          {(id) => <input id={id} type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />}
+          {(id) => <input id={id} type="date" value={to} onChange={(e) => {
+            setTo(e.target.value);
+            setPage(0);
+          }} className={inputClass} />}
         </Field>
       </div>
       <ErrorText message={error?.message} />
@@ -593,6 +690,7 @@ const Attendance: React.FC = () => {
           </table>
         </div>
       )}
+      <Pager page={page} onPage={setPage} hasNext={(data?.length ?? 0) > PAGE_SIZE} fetching={isFetching && !isLoading} />
         </>
       )}
     </div>

@@ -15,6 +15,7 @@ import {
 } from "@/lib/employment-form";
 import { request, saveEmployment, departmentsQuery, shiftsQuery } from "@/hooks/use-payroll-api";
 import { StatutoryFields } from "@/components/statutory-fields";
+import { BLOOD_GROUPS, GENDER_OPTIONS } from "@/hooks/use-employee-records";
 import { emptyStatutoryValues, statutoryValuesToInput } from "@/lib/statutory-form";
 import {
   getActiveOrganizationId,
@@ -45,6 +46,8 @@ const CreateEmployee: React.FC = () => {
   const [countryCode, setCountryCode] = useState("91");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"employee" | "admin" | "hr">("employee");
+  const [gender, setGender] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("");
   const [organizationId, setOrganizationId] = useState(initialOrganizationId);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
@@ -102,6 +105,13 @@ const CreateEmployee: React.FC = () => {
               employmentError = saveError instanceof Error ? saveError.message : "Request failed";
             }
           }
+          if (employeeId && (gender || bloodGroup)) {
+            try {
+              await request(`/employee-record/${employeeId}/profile`, organizationId, "PUT", { gender: gender || null, bloodGroup: bloodGroup || null });
+            } catch (saveError) {
+              employmentError = saveError instanceof Error ? saveError.message : "Request failed";
+            }
+          }
           if (employeeId && JSON.stringify(statutory) !== JSON.stringify(emptyStatutoryValues)) {
             try {
               await request(`/statutory/employees/${employeeId}`, organizationId, "PUT", statutoryValuesToInput(statutory));
@@ -114,6 +124,8 @@ const CreateEmployee: React.FC = () => {
           setLname("");
           setPhone("");
           setRole("employee");
+          setGender("");
+          setBloodGroup("");
           setEmployment(emptyEmploymentValues);
           setStatutory(emptyStatutoryValues);
           if (employmentError) {
@@ -234,6 +246,23 @@ const CreateEmployee: React.FC = () => {
               className={inputClass}
               required
             />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label htmlFor="employee-gender" className="text-sm font-medium">Gender</label>
+            <select id="employee-gender" value={gender} onChange={(event) => setGender(event.target.value)} disabled={loading} className={inputClass}>
+              <option value="">Not set</option>
+              {GENDER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="employee-blood-group" className="text-sm font-medium">Blood group</label>
+            <select id="employee-blood-group" value={bloodGroup} onChange={(event) => setBloodGroup(event.target.value)} disabled={loading} className={inputClass}>
+              <option value="">Not set</option>
+              {BLOOD_GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}
+            </select>
           </div>
         </div>
 

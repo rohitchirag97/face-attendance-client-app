@@ -8,6 +8,7 @@ import EmployeeProfileForm from "@/components/employee-profile-form";
 import { EmployeeStatutoryForm } from "@/components/statutory-fields";
 import EmployeeDocuments from "@/components/employee-documents";
 import EmployeeLifecycle from "@/components/employee-lifecycle";
+import EmployeeAssets from "@/components/employee-assets";
 import { getUser } from "@/lib/session";
 import { TabLayout, TabPanel } from "@/components/tabs";
 
@@ -18,6 +19,7 @@ const EDIT_TABS = [
   { id: "personal", label: "Personal & bank" },
   { id: "statutory", label: "Statutory" },
   { id: "documents", label: "Documents" },
+  { id: "assets", label: "Assets" },
   { id: "lifecycle", label: "Onboarding & exit" },
   { id: "access", label: "Access" },
 ];
@@ -259,6 +261,9 @@ const EmployeeEditor: React.FC<{
           isManager
           currentUserId={getUser()?.id ?? ""}
         />
+      </TabPanel>
+      <TabPanel id="assets" active={tab}>
+        <EmployeeAssets organizationId={organizationId} employeeId={employee.id} />
       </TabPanel>
       <TabPanel id="lifecycle" active={tab}>
         <EmployeeLifecycle

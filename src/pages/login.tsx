@@ -37,11 +37,9 @@ const Login: React.FC = () => {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm rounded-2xl border bg-background p-6 sm:p-8">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
-            H
-          </span>
+          <img src="/favicon.svg" alt="" className="size-12" />
           <h1 className="text-xl font-semibold tracking-tight">
-            Welcome to HazriPro
+            Welcome to Vetanly
           </h1>
           <p className="text-sm text-muted-foreground">
             Enter your phone number and we'll send you a one-time password.

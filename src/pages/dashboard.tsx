@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ErrorText } from "@/components/form-kit";
 import OnboardingChecklist from "@/components/onboarding-checklist";
+import GpsCheckIn from "@/components/gps-check-in";
 import { AdminCharts, EmployeeCharts } from "@/components/dashboard-charts";
 import { employeesQuery } from "@/hooks/use-api";
 import {
@@ -343,6 +344,8 @@ const Dashboard: React.FC = () => {
       {organizationId && hasManagerRole(organizationId) && (
         <OnboardingChecklist key={organizationId} organizationId={organizationId} />
       )}
+
+      {organizationId && <GpsCheckIn key={`gps-${organizationId}`} organizationId={organizationId} />}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {isManager ? (

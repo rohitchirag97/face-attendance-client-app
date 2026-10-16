@@ -122,11 +122,11 @@ export const describeAccess = (access: PlatformAccess, upgradeRequestedAt?: stri
     access.state === "inactive"
       ? "Trial not started"
       : access.state === "trial"
-      ? `Trial · ${days(access.daysLeft)} left`
+      ? access.daysLeft === 0 ? "Trial · ends today" : `Trial · ${days(access.daysLeft)} left`
       : access.state === "paid"
         ? `Paid until ${formatPlatformDate(access.accessEndsAt)}`
         : access.state === "grace"
-          ? `Grace · read-only in ${days(access.daysLeft)}`
+          ? access.daysLeft === 0 ? "Grace · read-only later today" : `Grace · read-only in ${days(access.daysLeft)}`
           : "Read-only";
   return upgradeRequestedAt ? `Upgrade requested ${formatPlatformDate(upgradeRequestedAt)} · ${state}` : state;
 };

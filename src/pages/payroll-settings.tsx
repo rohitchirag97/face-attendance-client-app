@@ -50,6 +50,9 @@ const SettingsForm: React.FC<{
   const [autoLoans, setAutoLoans] = useState(settings?.autoDeductLoans ?? false);
   const [paidHolidays, setPaidHolidays] = useState(settings?.paidHolidays ?? false);
   const [otApproval, setOtApproval] = useState(settings?.overtimeApprovalRequired ?? false);
+  const [offDayPolicy, setOffDayPolicy] = useState<PayrollSettings["offDayWorkPolicy"]>(settings?.offDayWorkPolicy ?? "manager");
+  const [weeklyOffRate, setWeeklyOffRate] = useState(text(settings?.weeklyOffWorkMultiplier, "1"));
+  const [holidayRate, setHolidayRate] = useState(text(settings?.holidayWorkMultiplier, "2"));
   const [tab, setTab] = useState("general");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -71,6 +74,11 @@ const SettingsForm: React.FC<{
     if (fineMethod !== "none" && fine === null) return setError("Enter the late fine amount.");
     const full = toNumberOrNull(fullPercent);
     const half = toNumberOrNull(halfPercent);
+    const weeklyRate = toNumberOrNull(weeklyOffRate);
+    const holidayRateValue = toNumberOrNull(holidayRate);
+    if (weeklyRate === null || holidayRateValue === null || weeklyRate > 5 || holidayRateValue > 5) {
+      return setError("Off-day pay rates must be between 0 and 5 times a day's pay.");
+    }
     if (!full || !half || full > 100 || half >= full) {
       return setError("Half-day % must be lower than full-day %, and full-day % at most 100.");
     }
@@ -91,6 +99,9 @@ const SettingsForm: React.FC<{
         autoDeductLoans: autoLoans,
         paidHolidays,
         overtimeApprovalRequired: otApproval,
+        offDayWorkPolicy: offDayPolicy,
+        weeklyOffWorkMultiplier: weeklyRate,
+        holidayWorkMultiplier: holidayRateValue,
       },
       { onSuccess: () => setSaved(true), onError: (e) => setError(e.message) },
     );
@@ -240,9 +251,38 @@ const SettingsForm: React.FC<{
       </fieldset>
 
       <fieldset className="space-y-4 border-t pt-4">
+        <legend className="text-sm font-semibold">Work on off days</legend>
+        <p className="text-xs text-muted-foreground">
+          When someone works on their weekly off or a holiday, they can be given a comp-off (a day of leave) or extra pay.
+          Employees can ask for either from the Leave page.
+        </p>
+        <Field label="Default">
+          {(id) => (
+            <select id={id} value={offDayPolicy} onChange={(e) => setOffDayPolicy(e.target.value as typeof offDayPolicy)} className={inputClass}>
+              <option value="manager">Manager decides each day (undecided days are not paid)</option>
+              <option value="pay">Always pay</option>
+              <option value="comp_off">Always give comp-off</option>
+            </select>
+          )}
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Weekly off pay (× a day's pay)" hint="1 pays one normal day; 2 pays double.">
+            {(id) => (
+              <input id={id} type="number" step="0.25" min="0" max="5" value={weeklyOffRate} onChange={(e) => setWeeklyOffRate(e.target.value)} className={inputClass} />
+            )}
+          </Field>
+          <Field label="Holiday pay (× a day's pay)" hint="Includes any holiday pay already given: 2 with paid holidays on adds one extra day.">
+            {(id) => (
+              <input id={id} type="number" step="0.25" min="0" max="5" value={holidayRate} onChange={(e) => setHolidayRate(e.target.value)} className={inputClass} />
+            )}
+          </Field>
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4 border-t pt-4">
         <legend className="text-sm font-semibold">Day status</legend>
         <p className="text-xs text-muted-foreground">
-          Worked time (check-in to check-out, minus the shift break) is compared with the shift's
+          Worked time (check-in to check-out, minus the shift break, or a share of it for partial days) is compared with the shift's
           working hours to decide whether a day counts as full, half, or absent.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">

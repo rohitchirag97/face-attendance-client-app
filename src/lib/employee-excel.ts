@@ -180,7 +180,7 @@ export const downloadEmployeeTemplate = async (
   );
   const link = document.createElement("a");
   link.href = url;
-  link.download = "hazripro-employee-template.xlsx";
+  link.download = "vetanly-employee-template.xlsx";
   link.click();
   URL.revokeObjectURL(url);
 };

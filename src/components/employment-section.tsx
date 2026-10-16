@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { hasPeopleManagerRole } from "@/lib/session";
+import { branchesQuery } from "@/hooks/use-branches";
 import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorText, Field, Spinner } from "@/components/form-kit";
@@ -35,6 +37,9 @@ export const EmploymentFields: React.FC<{
 
   const activeDepartments = departments.filter((d) => d.isActive || d.id === values.departmentId);
   const activeShifts = shifts.filter((s) => s.isActive || s.id === values.shiftId);
+  const { data: branchData } = useQuery(branchesQuery(organizationId, hasPeopleManagerRole(organizationId)));
+  // A branch manager can place people only in their own branches.
+  const activeBranches = (branchData?.branches ?? []).filter((b) => (b.isActive && b.manageable) || b.id === values.branchId);
 
   return (
     <div className="space-y-6">
@@ -68,6 +73,18 @@ export const EmploymentFields: React.FC<{
           </select>
         )}
       </Field>
+      {activeBranches.length > 0 && (
+        <Field label="Branch" hint="Holidays, professional tax and GPS check-in follow the branch">
+          {(id) => (
+            <select id={id} value={values.branchId} onChange={set("branchId")} disabled={disabled} className={inputClass}>
+              {!branchData?.limitedTo && <option value="">None</option>}
+              {activeBranches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          )}
+        </Field>
+      )}
       <Field label="Employment type">
         {(id) => (
           <select id={id} value={values.employmentType} onChange={set("employmentType")} disabled={disabled} className={inputClass}>

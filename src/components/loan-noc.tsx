@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FileCheck2, Loader2, Mail, MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorText, Spinner } from "@/components/form-kit";
+import DeliveryAddonHint from "@/components/delivery-addon-hint";
 import { loanNocQuery, useSendLoanNocEmail, useSendLoanNocWhatsApp } from "@/hooks/use-payroll-api";
 
 const fmt = (iso: string) =>
@@ -66,6 +67,7 @@ const Letter: React.FC<{ organizationId: string; recoverableId: string }> = ({
           </Button>
         )}
       </div>
+      <DeliveryAddonHint addon={noc.delivery.addon} />
       {notice && (
         <p role="status" className="text-sm text-green-600 print:hidden">
           {notice}
